@@ -3,9 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>@yield('title', 'MicroTool Hub — Small Web Tools Community & ChatGPT MCP')</title>
-  <meta name="description" content="@yield('meta_description', 'Discover, create, edit, preview, and fork responsive web micro-tools. Powered by Laravel and ChatGPT MCP.')">
+  <title>@yield('title', 'MicroTool Hub — Small Tools. Big Productivity.')</title>
+  <meta name="description" content="@yield('meta_description', 'Free online tools to convert, edit, calculate, and create — all in one place. Powered by Laravel and ChatGPT MCP.')">
   
+  <!-- Anti-flicker theme initialization -->
+  <script>
+    (function() {
+      const savedTheme = localStorage.getItem('microtool_theme') || 'dark';
+      document.documentElement.setAttribute('data-bs-theme', savedTheme);
+    })();
+  </script>
+
   <!-- Favicon -->
   <link rel="icon" type="image/png" href="{{ asset('assets/icon.png') }}">
 
@@ -16,146 +24,86 @@
   <!-- Google Fonts: Inter & JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;850&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-  <style>
-    :root {
-      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      --font-mono: 'JetBrains Mono', Consolas, Monaco, monospace;
-      --mcp-cyan: #06b6d4;
-      --mcp-blue: #3b82f6;
-      --mcp-gradient: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%);
-    }
-
-    body {
-      font-family: var(--font-sans);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
-
-    code, pre, .font-mono {
-      font-family: var(--font-mono);
-    }
-
-    .navbar-brand-badge {
-      background: var(--mcp-gradient);
-      color: white;
-      font-weight: 800;
-      border-radius: 8px;
-      padding: 4px 10px;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .hero-gradient {
-      background: radial-gradient(circle at top right, rgba(6, 182, 212, 0.15), transparent 40%),
-                  radial-gradient(circle at top left, rgba(59, 130, 246, 0.15), transparent 40%);
-    }
-
-    .tool-card {
-      transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
-      border: 1px solid var(--bs-border-color);
-      border-radius: 12px;
-      overflow: hidden;
-      background: var(--bs-body-bg);
-    }
-
-    .tool-card:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 12px 24px rgba(0, 0, 0, 0.25);
-      border-color: var(--mcp-cyan);
-    }
-
-    .btn-gradient {
-      background: var(--mcp-gradient);
-      color: white;
-      border: none;
-      font-weight: 600;
-      transition: opacity 0.2s;
-    }
-
-    .btn-gradient:hover {
-      opacity: 0.9;
-      color: white;
-    }
-
-    .badge-mcp {
-      background: rgba(6, 182, 212, 0.15);
-      color: var(--mcp-cyan);
-      border: 1px solid rgba(6, 182, 212, 0.3);
-      font-weight: 600;
-    }
-
-    footer {
-      margin-top: auto;
-      border-top: 1px solid var(--bs-border-color);
-      background: var(--bs-tertiary-bg);
-    }
-  </style>
+  <!-- MicroTool Hub Design System -->
+  <link rel="stylesheet" href="{{ asset('assets/design-system.css') }}?v=2026.1">
 
   @stack('styles')
 </head>
 <body>
 
-  <!-- Navigation -->
-  <nav class="navbar navbar-expand-lg border-bottom sticky-top bg-body">
+  <!-- Navigation Bar -->
+  <nav class="site-navbar navbar navbar-expand-lg sticky-top">
     <div class="container">
-      <a class="navbar-brand d-flex align-items-center gap-2" href="{{ route('home') }}">
-        <img src="{{ asset('assets/icon.png') }}" alt="Logo" width="32" height="32" class="rounded">
-        <span class="fw-bold tracking-tight">MicroTool<span class="text-info">Hub</span></span>
-        <span class="badge badge-mcp rounded-pill ms-1 font-mono text-uppercase" style="font-size: 0.65rem;">ChatGPT MCP</span>
+      <!-- Brand Logo -->
+      <a class="brand-badge" href="{{ route('home') }}">
+        <div class="brand-icon">
+          <i class="bi bi-cpu-fill fs-5"></i>
+        </div>
+        <span class="d-flex align-items-center gap-2">
+          <span>MicroTool<span style="color: var(--violet-500);">Hub</span></span>
+          <span class="mcp-pill d-none d-sm-inline-block">MCP</span>
+        </span>
       </a>
 
-      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar">
-        <span class="navbar-toggler-icon"></span>
+      <!-- Mobile Toggler -->
+      <button class="navbar-toggler border-0 p-2 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+        <i class="bi bi-list fs-3 text-secondary"></i>
       </button>
 
+      <!-- Nav Links -->
       <div class="collapse navbar-collapse" id="mainNavbar">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4 gap-lg-1">
           <li class="nav-item">
-            <a class="nav-link {{ request()->routeIs('explore') ? 'active fw-semibold text-info' : '' }}" href="{{ route('explore') }}">
-              <i class="bi bi-compass me-1"></i> Explore
+            <a class="nav-link-custom {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">
+              <i class="bi bi-house-door"></i> Home
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ route('home') }}#categories">
-              <i class="bi bi-grid me-1"></i> Categories
+            <a class="nav-link-custom {{ request()->routeIs('explore') ? 'active' : '' }}" href="{{ route('explore') }}">
+              <i class="bi bi-grid-3x3-gap"></i> All Tools
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" href="{{ route('home') }}#chatgpt-guide">
-              <i class="bi bi-robot me-1"></i> ChatGPT Connect
+            <a class="nav-link-custom" href="{{ route('home') }}#categories">
+              <i class="bi bi-tags"></i> Categories
+            </a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link-custom" href="{{ route('home') }}#about">
+              <i class="bi bi-info-circle"></i> About
             </a>
           </li>
         </ul>
 
-        <!-- Search Bar -->
-        <form class="d-flex me-lg-3 my-2 my-lg-0" action="{{ route('explore') }}" method="GET">
+        <!-- Search Bar (Desktop & Tablet) -->
+        <form class="d-none d-md-flex me-lg-3 my-2 my-lg-0" action="{{ route('explore') }}" method="GET" style="max-width: 240px;">
           <div class="input-group input-group-sm">
-            <span class="input-group-text bg-body-tertiary border-end-0"><i class="bi bi-search text-muted"></i></span>
-            <input class="form-control bg-body-tertiary border-start-0" type="search" name="q" placeholder="Search micro-tools..." value="{{ request('q') }}" aria-label="Search">
+            <span class="input-group-text bg-transparent border-end-0 border-secondary-subtle">
+              <i class="bi bi-search text-muted small"></i>
+            </span>
+            <input class="form-control bg-transparent border-start-0 border-secondary-subtle text-body shadow-none" type="search" name="q" placeholder="Find a tool..." value="{{ request('q') }}" aria-label="Search">
           </div>
         </form>
 
-        <!-- Right Side Auth / Theme -->
-        <div class="d-flex align-items-center gap-2">
-          <!-- Theme Toggle -->
-          <button class="btn btn-sm btn-outline-secondary" id="themeToggleBtn" title="Toggle theme">
+        <!-- Right Side: Theme Toggle & Authentication -->
+        <div class="d-flex align-items-center gap-2 pt-2 pt-lg-0">
+          <!-- Theme Toggle Button -->
+          <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme (Dark / Light)" aria-label="Switch Theme">
             <i class="bi bi-sun-fill" id="themeIcon"></i>
           </button>
 
           @auth
-            <a href="{{ route('dashboard.index') }}" class="btn btn-sm btn-outline-primary">
-              <i class="bi bi-speedometer2 me-1"></i> Dashboard
+            <a href="{{ route('dashboard.index') }}" class="btn-secondary-custom d-inline-flex align-items-center gap-1 text-decoration-none py-1 px-3 small">
+              <i class="bi bi-speedometer2"></i> Dashboard
             </a>
             <div class="dropdown">
-              <button class="btn btn-sm btn-outline-secondary dropdown-toggle d-flex align-items-center gap-2" type="button" data-bs-toggle="dropdown">
+              <button class="btn-secondary-custom dropdown-toggle d-flex align-items-center gap-2 py-1 px-3 small" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-person-circle"></i>
-                <span>{{ auth()->user()->name }}</span>
+                <span class="d-none d-sm-inline">{{ auth()->user()->name }}</span>
               </button>
-              <ul class="dropdown-menu dropdown-menu-end shadow">
+              <ul class="dropdown-menu dropdown-menu-end shadow border-subtle">
                 <li><h6 class="dropdown-header">Signed in as <strong>{{ auth()->user()->email }}</strong></h6></li>
                 <li><a class="dropdown-item" href="{{ route('dashboard.index') }}"><i class="bi bi-kanban me-2"></i>My Projects</a></li>
                 <li><a class="dropdown-item" href="{{ route('dashboard.tokens') }}"><i class="bi bi-key me-2"></i>MCP Access Tokens</a></li>
@@ -169,8 +117,8 @@
               </ul>
             </div>
           @else
-            <a href="{{ route('login') }}" class="btn btn-sm btn-outline-secondary">Sign In</a>
-            <a href="{{ route('register') }}" class="btn btn-sm btn-gradient">Get Started</a>
+            <a href="{{ route('login') }}" class="btn-secondary-custom text-decoration-none py-1 px-3 small">Sign In</a>
+            <a href="{{ route('register') }}" class="btn-violet text-decoration-none py-1 px-3 small">Get Started</a>
           @endauth
         </div>
       </div>
@@ -180,17 +128,17 @@
   <!-- Flash Messages -->
   <div class="container mt-3">
     @if(session('success'))
-      <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
-        <i class="bi bi-check-circle-fill text-success fs-5"></i>
-        <div>{{ session('success') }}</div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 rounded-3 border-0 shadow-sm" role="alert" style="background: var(--color-success-bg); color: var(--color-success); border: 1px solid var(--color-success) !important;">
+        <i class="bi bi-check-circle-fill fs-5"></i>
+        <div class="fw-medium">{{ session('success') }}</div>
+        <button type="button" class="btn-close shadow-none" data-bs-dismiss="alert"></button>
       </div>
     @endif
     @if(session('error'))
-      <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
-        <i class="bi bi-exclamation-triangle-fill text-danger fs-5"></i>
-        <div>{{ session('error') }}</div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 rounded-3 border-0 shadow-sm" role="alert" style="background: var(--color-error-bg); color: var(--color-error); border: 1px solid var(--color-error) !important;">
+        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+        <div class="fw-medium">{{ session('error') }}</div>
+        <button type="button" class="btn-close shadow-none" data-bs-dismiss="alert"></button>
       </div>
     @endif
   </div>
@@ -200,58 +148,72 @@
     @yield('content')
   </main>
 
-  <!-- Footer -->
-  <footer class="py-5 mt-5">
+  <!-- Professional Footer -->
+  <footer class="mt-auto border-top py-5" style="background: var(--footer-bg); border-color: var(--border-subtle) !important;">
     <div class="container">
-      <div class="row g-4">
+      <div class="row g-4 justify-content-between">
+        <!-- Col 1: Brand Info -->
         <div class="col-lg-4">
           <div class="d-flex align-items-center gap-2 mb-3">
-            <img src="{{ asset('assets/icon.png') }}" alt="Logo" width="28" height="28" class="rounded">
-            <span class="fw-bold fs-5">MicroTool<span class="text-info">Hub</span></span>
+            <div class="brand-icon" style="width: 28px; height: 28px; font-size: 0.9rem;">
+              <i class="bi bi-cpu-fill"></i>
+            </div>
+            <span class="fw-bold fs-5 text-body">MicroTool<span style="color: var(--violet-500);">Hub</span></span>
           </div>
-          <p class="text-muted small">
-            The open community platform for single-purpose web tools. Build, edit, preview, and fork web tools natively or via ChatGPT using the Model Context Protocol (MCP).
+          <p class="text-secondary small mb-3">
+            Small tools. Big productivity. Free, single-purpose web tools processed locally in your browser. Build, edit, preview, and fork natively or connect to ChatGPT via MCP.
           </p>
-          <div class="d-flex gap-2 text-muted">
-            <span class="badge bg-secondary-subtle text-secondary font-mono">PHP 8.3+</span>
-            <span class="badge bg-secondary-subtle text-secondary font-mono">Laravel 13</span>
-            <span class="badge bg-info-subtle text-info font-mono">MCP Apps 1.0</span>
+          <div class="d-flex flex-wrap gap-2">
+            <span class="badge font-mono small py-1 px-2" style="background: var(--violet-soft); color: var(--violet-500); border: 1px solid var(--violet-border);">Client-Side Isolated</span>
+            <span class="badge font-mono small py-1 px-2" style="background: rgba(16, 185, 129, 0.12); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.25);">100% Private</span>
+            <span class="badge font-mono small py-1 px-2 text-secondary bg-body-tertiary border">Model Context Protocol</span>
           </div>
         </div>
-        <div class="col-6 col-lg-2 offset-lg-1">
-          <h6 class="fw-bold mb-3">Explore</h6>
-          <ul class="list-unstyled text-muted small">
-            <li class="mb-2"><a href="{{ route('explore', ['sort' => 'popular']) }}" class="text-decoration-none text-muted">Popular Tools</a></li>
-            <li class="mb-2"><a href="{{ route('explore', ['sort' => 'recent']) }}" class="text-decoration-none text-muted">Recently Added</a></li>
-            <li class="mb-2"><a href="{{ route('explore', ['category' => 'developer-tools']) }}" class="text-decoration-none text-muted">Developer Utilities</a></li>
-            <li class="mb-2"><a href="{{ route('explore', ['category' => 'design-colors']) }}" class="text-decoration-none text-muted">CSS & Design</a></li>
-          </ul>
-        </div>
+
+        <!-- Col 2: Directory -->
         <div class="col-6 col-lg-2">
-          <h6 class="fw-bold mb-3">AI Platform</h6>
-          <ul class="list-unstyled text-muted small">
-            <li class="mb-2"><a href="{{ url('/.well-known/oauth-protected-resource') }}" class="text-decoration-none text-muted">RFC 9728 Discovery</a></li>
-            <li class="mb-2"><a href="{{ url('/.well-known/oauth-authorization-server') }}" class="text-decoration-none text-muted">OAuth 2.1 Metadata</a></li>
-            <li class="mb-2"><a href="{{ url('/plugin.json') }}" class="text-decoration-none text-muted">Plugin Manifest</a></li>
-            <li class="mb-2"><a href="{{ url('/mcp.json') }}" class="text-decoration-none text-muted">MCP Config</a></li>
+          <h6 class="fw-bold mb-3 text-body">Directory</h6>
+          <ul class="list-unstyled text-secondary small">
+            <li class="mb-2"><a href="{{ route('explore', ['sort' => 'popular']) }}" class="text-decoration-none text-secondary">Popular Tools</a></li>
+            <li class="mb-2"><a href="{{ route('explore', ['sort' => 'recent']) }}" class="text-decoration-none text-secondary">Recently Added</a></li>
+            <li class="mb-2"><a href="{{ route('explore', ['category' => 'developer-tools']) }}" class="text-decoration-none text-secondary">Developer Tools</a></li>
+            <li class="mb-2"><a href="{{ route('explore', ['category' => 'design-colors']) }}" class="text-decoration-none text-secondary">Design & Colors</a></li>
+            <li class="mb-2"><a href="{{ route('explore', ['category' => 'converters']) }}" class="text-decoration-none text-secondary">Converters</a></li>
           </ul>
         </div>
+
+        <!-- Col 3: AI Platform -->
+        <div class="col-6 col-lg-2">
+          <h6 class="fw-bold mb-3 text-body">AI Platform</h6>
+          <ul class="list-unstyled text-secondary small">
+            <li class="mb-2"><a href="{{ url('/.well-known/oauth-protected-resource') }}" class="text-decoration-none text-secondary">RFC 9728 Discovery</a></li>
+            <li class="mb-2"><a href="{{ url('/.well-known/oauth-authorization-server') }}" class="text-decoration-none text-secondary">OAuth 2.1 Metadata</a></li>
+            <li class="mb-2"><a href="{{ url('/plugin.json') }}" class="text-decoration-none text-secondary">Plugin Manifest</a></li>
+            <li class="mb-2"><a href="{{ url('/mcp.json') }}" class="text-decoration-none text-secondary">MCP Schema</a></li>
+            <li class="mb-2"><a href="{{ route('home') }}#chatgpt-connect" class="text-decoration-none text-secondary">Connect ChatGPT</a></li>
+          </ul>
+        </div>
+
+        <!-- Col 4: MCP Connect -->
         <div class="col-lg-3">
-          <h6 class="fw-bold mb-3">ChatGPT Integration</h6>
-          <p class="text-muted small">
-            Connect ChatGPT directly to your workspace using Streamable HTTP at <code>{{ url('/mcp') }}</code>.
+          <h6 class="fw-bold mb-3 text-body">ChatGPT Integration</h6>
+          <p class="text-secondary small mb-3">
+            Connect ChatGPT directly to your workspace using Streamable HTTP:
+            <code class="d-block mt-1 p-2 rounded small text-break" style="background: var(--bg-card); color: var(--violet-500); border: 1px solid var(--border-subtle);">{{ url('/mcp') }}</code>
           </p>
-          <a href="{{ route('dashboard.tokens') }}" class="btn btn-sm btn-outline-info">
-            <i class="bi bi-cpu me-1"></i> Setup MCP Connection
+          <a href="{{ route('dashboard.tokens') }}" class="btn-outline-violet d-inline-flex align-items-center gap-1 text-decoration-none py-1 px-3 small">
+            <i class="bi bi-cpu"></i> Setup Connector
           </a>
         </div>
       </div>
-      <div class="border-top mt-4 pt-4 d-flex flex-wrap justify-content-between align-items-center text-muted small">
-        <div>&copy; {{ date('Y') }} MicroTool Hub. Released under MIT License.</div>
+
+      <!-- Copyright bar -->
+      <div class="border-top mt-4 pt-4 d-flex flex-wrap justify-content-between align-items-center text-secondary small" style="border-color: var(--border-subtle) !important;">
+        <div>&copy; {{ date('Y') }} MicroTool Hub. Open source micro-tool platform.</div>
         <div class="d-flex gap-3">
-          <span>Privacy Policy</span>
-          <span>Terms of Service</span>
-          <span>Security & Limits</span>
+          <a href="{{ route('explore') }}" class="text-secondary text-decoration-none">Explore Tools</a>
+          <a href="{{ route('home') }}#categories" class="text-secondary text-decoration-none">Categories</a>
+          <a href="{{ route('home') }}#about" class="text-secondary text-decoration-none">About</a>
         </div>
       </div>
     </div>
@@ -260,29 +222,40 @@
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
-  <!-- Theme Toggle JS -->
+  <!-- Theme Toggle Controller -->
   <script>
-    const themeToggleBtn = document.getElementById('themeToggleBtn');
-    const themeIcon = document.getElementById('themeIcon');
-    const htmlEl = document.documentElement;
+    (function() {
+      const themeToggleBtn = document.getElementById('themeToggleBtn');
+      const themeIcon = document.getElementById('themeIcon');
+      const htmlEl = document.documentElement;
 
-    function setTheme(theme) {
-      htmlEl.setAttribute('data-bs-theme', theme);
-      localStorage.setItem('theme', theme);
-      if (theme === 'dark') {
-        themeIcon.className = 'bi bi-sun-fill';
-      } else {
-        themeIcon.className = 'bi bi-moon-fill';
+      function updateIcon(theme) {
+        if (themeIcon) {
+          if (theme === 'dark') {
+            themeIcon.className = 'bi bi-sun-fill text-warning';
+          } else {
+            themeIcon.className = 'bi bi-moon-stars-fill text-primary';
+          }
+        }
       }
-    }
 
-    const savedTheme = localStorage.getItem('theme') || 'dark';
-    setTheme(savedTheme);
+      function applyTheme(theme) {
+        htmlEl.setAttribute('data-bs-theme', theme);
+        localStorage.setItem('microtool_theme', theme);
+        updateIcon(theme);
+      }
 
-    themeToggleBtn.addEventListener('click', () => {
-      const current = htmlEl.getAttribute('data-bs-theme');
-      setTheme(current === 'dark' ? 'light' : 'dark');
-    });
+      const initialTheme = localStorage.getItem('microtool_theme') || 'dark';
+      updateIcon(initialTheme);
+
+      if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', function() {
+          const currentTheme = htmlEl.getAttribute('data-bs-theme') || 'dark';
+          const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+          applyTheme(newTheme);
+        });
+      }
+    })();
   </script>
 
   @stack('scripts')
