@@ -1,4 +1,4 @@
-FROM php:8.3-apache
+FROM php:8.4-apache
 
 # Install required system packages and PostgreSQL client libraries
 RUN apt-get update && apt-get install -y \
@@ -29,7 +29,7 @@ WORKDIR /var/www/html
 
 # Copy composer dependencies first for Docker caching
 COPY composer.json composer.lock ./
-RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist
+RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --ignore-platform-req=php+
 
 # Copy the rest of the application files
 COPY . .
