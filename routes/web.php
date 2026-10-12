@@ -34,6 +34,13 @@ Route::post('/oauth/revoke', [OAuthController::class, 'revoke'])->name('oauth.re
 | Model Context Protocol (MCP) Streamable HTTP Server
 |--------------------------------------------------------------------------
 */
+Route::options('/mcp', function () {
+    return response('', 204, [
+        'Access-Control-Allow-Origin' => '*',
+        'Access-Control-Allow-Methods' => 'POST, GET, OPTIONS',
+        'Access-Control-Allow-Headers' => 'Content-Type, Authorization, X-Requested-With, Baggage, Sentry-Trace',
+    ]);
+});
 Route::post('/mcp', [McpController::class, 'handle'])->name('mcp.handle');
 Route::get('/mcp', [McpController::class, 'sse'])->name('mcp.sse');
 

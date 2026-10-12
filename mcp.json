@@ -3,7 +3,7 @@
   "mcpServers": {
     "microtool-hub": {
       "type": "streamable-http",
-      "url": "https://microtoolhub.com/mcp",
+      "url": "https://microtool-hub.getvoroa.com/mcp",
       "extensions": {
         "com.openai": {
           "auth": {
@@ -11,10 +11,11 @@
             "client": {
               "mode": "provided",
               "clientId": "chatgpt_client_microtool",
-              "tokenEndpointAuthMethod": "client_secret_basic"
+              "tokenEndpointAuthMethod": "none"
             },
-            "authorizationUrl": "https://microtoolhub.com/oauth/authorize",
-            "tokenUrl": "https://microtoolhub.com/oauth/token",
+            "authorizationUrl": "https://microtool-hub.getvoroa.com/oauth/authorize",
+            "tokenUrl": "https://microtool-hub.getvoroa.com/oauth/token",
+            "registrationUrl": "https://microtool-hub.getvoroa.com/oauth/register",
             "baseScopes": [
               "tools:read",
               "projects:create",

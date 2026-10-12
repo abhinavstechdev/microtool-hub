@@ -6,10 +6,10 @@
   "author": {
     "name": "MicroTool Team",
     "email": "developer@microtoolhub.com",
-    "url": "https://microtoolhub.com"
+    "url": "https://microtool-hub.getvoroa.com"
   },
-  "homepage": "https://microtoolhub.com",
-  "repository": "https://github.com/example/microtool-hub",
+  "homepage": "https://microtool-hub.getvoroa.com",
+  "repository": "https://github.com/abhinavstechdev/microtool-hub",
   "license": "MIT",
   "extensions": {
     "com.openai": {
@@ -26,9 +26,9 @@
           "Automated code validation and snapshots",
           "Community publishing and forking"
         ],
-        "websiteURL": "https://microtoolhub.com",
-        "privacyPolicyURL": "https://microtoolhub.com/privacy",
-        "termsOfServiceURL": "https://microtoolhub.com/terms",
+        "websiteURL": "https://microtool-hub.getvoroa.com",
+        "privacyPolicyURL": "https://microtool-hub.getvoroa.com/privacy",
+        "termsOfServiceURL": "https://microtool-hub.getvoroa.com/terms",
         "defaultPrompt": [
           "Build a responsive timestamp and timezone converter",
           "Create a clean CSS box-shadow generator with code copy",
