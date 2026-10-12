@@ -46,7 +46,10 @@ class OAuthController extends Controller
             'issuer' => url('/'),
             'authorization_endpoint' => url('/oauth/authorize'),
             'token_endpoint' => url('/oauth/token'),
+            'registration_endpoint' => url('/oauth/register'),
             'revocation_endpoint' => url('/oauth/revoke'),
+            'client_id_metadata_document_supported' => true,
+            'authorization_response_iss_parameter_supported' => true,
             'response_types_supported' => ['code'],
             'grant_types_supported' => ['authorization_code'],
             'code_challenge_methods_supported' => ['S256'],
@@ -58,9 +61,52 @@ class OAuthController extends Controller
                 'files:delete',
                 'projects:publish'
             ],
-            'token_endpoint_auth_methods_supported' => ['client_secret_basic', 'client_secret_post', 'none'],
+            'token_endpoint_auth_methods_supported' => ['none', 'client_secret_post', 'client_secret_basic'],
         ], 200, [
             'Content-Type' => 'application/json',
+            'Access-Control-Allow-Origin' => '*',
+        ]);
+    }
+
+    /**
+     * RFC 7591 Dynamic Client Registration (DCR)
+     */
+    public function registerClient(Request $request): JsonResponse
+    {
+        $redirectUris = $request->input('redirect_uris', []);
+        if (is_array($redirectUris)) {
+            $redirectUrisStr = implode("\n", $redirectUris);
+        } else {
+            $redirectUrisStr = (string) $redirectUris;
+        }
+
+        $clientId = 'dcr_' . Str::random(32);
+        $clientSecret = 'sec_' . Str::random(32);
+        $clientName = $request->input('client_name', 'ChatGPT MCP Client');
+        $authMethod = $request->input('token_endpoint_auth_method', 'none');
+
+        OAuthClient::create([
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+            'name' => $clientName,
+            'redirect_uris' => $redirectUrisStr,
+            'is_confidential' => $authMethod !== 'none',
+            'revoked' => false,
+        ]);
+
+        return response()->json([
+            'client_id' => $clientId,
+            'client_secret' => $clientSecret,
+            'client_id_issued_at' => time(),
+            'client_name' => $clientName,
+            'redirect_uris' => is_array($redirectUris) ? $redirectUris : [$redirectUrisStr],
+            'grant_types' => ['authorization_code'],
+            'response_types' => ['code'],
+            'token_endpoint_auth_method' => $authMethod,
+        ], 201, [
+            'Content-Type' => 'application/json',
+            'Cache-Control' => 'no-store',
+            'Pragma' => 'no-cache',
             'Access-Control-Allow-Origin' => '*',
         ]);
     }
@@ -89,6 +135,19 @@ class OAuthController extends Controller
         $codeChallengeMethod = $request->query('code_challenge_method', 'S256');
 
         $client = OAuthClient::where('client_id', $clientId)->where('revoked', false)->first();
+        if (!$client && (str_starts_with((string) $clientId, 'https://') || str_starts_with((string) $clientId, 'chatgpt_'))) {
+            $client = OAuthClient::firstOrCreate(
+                ['client_id' => $clientId],
+                [
+                    'client_secret' => null,
+                    'name' => str_starts_with((string) $clientId, 'https://') ? 'ChatGPT (CIMD)' : 'ChatGPT Official Plugin Connector',
+                    'redirect_uris' => $redirectUri ?: "https://chatgpt.com/connector_platform_oauth_redirect\nhttps://chatgpt.com/connector/oauth/*\nhttps://chatgpt.com/aip/plugin-oauth/callback",
+                    'is_confidential' => false,
+                    'revoked' => false,
+                ]
+            );
+        }
+
         if (!$client) {
             return response()->view('errors.oauth', ['error' => 'Invalid or unrecognized client_id.'], 400);
         }
@@ -128,10 +187,24 @@ class OAuthController extends Controller
             return redirect()->route('login');
         }
 
+        $clientId = $request->input('client_id');
+        if ((str_starts_with($clientId, 'https://') || str_starts_with($clientId, 'chatgpt_')) && !OAuthClient::where('client_id', $clientId)->exists()) {
+            OAuthClient::firstOrCreate(
+                ['client_id' => $clientId],
+                [
+                    'client_secret' => null,
+                    'name' => str_starts_with($clientId, 'https://') ? 'ChatGPT (CIMD)' : 'ChatGPT Official Plugin Connector',
+                    'redirect_uris' => $request->input('redirect_uri'),
+                    'is_confidential' => false,
+                    'revoked' => false,
+                ]
+            );
+        }
+
         $code = Str::random(40);
         OAuthAuthCode::create([
             'user_id' => Auth::id(),
-            'client_id' => $request->input('client_id'),
+            'client_id' => $clientId,
             'code' => $code,
             'scopes' => $request->input('scope', 'tools:read projects:read projects:create files:write'),
             'code_challenge' => $request->input('code_challenge'),
@@ -147,6 +220,7 @@ class OAuthController extends Controller
         $params = http_build_query([
             'code' => $code,
             'state' => $request->input('state'),
+            'iss' => url('/'),
         ]);
 
         return redirect()->away($redirectUri . $delimiter . $params);

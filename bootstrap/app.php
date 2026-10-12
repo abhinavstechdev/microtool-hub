@@ -17,6 +17,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'mcp',
             'oauth/token',
             'oauth/revoke',
+            'oauth/register',
             '.well-known/*',
         ]);
     })

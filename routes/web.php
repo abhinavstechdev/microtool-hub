@@ -26,6 +26,7 @@ Route::get('/healthz', fn () => response('OK', 200))->name('healthz');
 Route::get('/oauth/authorize', [OAuthController::class, 'authorizePrompt'])->name('oauth.authorize');
 Route::post('/oauth/authorize', [OAuthController::class, 'approve'])->name('oauth.approve');
 Route::post('/oauth/token', [OAuthController::class, 'token'])->name('oauth.token');
+Route::post('/oauth/register', [OAuthController::class, 'registerClient'])->name('oauth.register');
 Route::post('/oauth/revoke', [OAuthController::class, 'revoke'])->name('oauth.revoke');
 
 /*
