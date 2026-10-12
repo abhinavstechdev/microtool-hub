@@ -164,8 +164,17 @@ class PublicController extends Controller
             $html = str_replace('</body>', "<script>\n// Injected app.js\n{$js}\n</script>\n</body>", $html);
         }
 
-        // Restrictive CSP Header: allows inline scripts for preview without cross-site cookie leaks
-        $csp = "default-src 'self' 'unsafe-inline' data:; connect-src 'none'; frame-ancestors *";
+        // Restrictive CSP Header: allows client-side assets and blob URLs for in-browser file tools, with zero external network exfiltration (connect-src 'none')
+        $csp = "default-src 'self' 'unsafe-inline' data: blob:; " .
+               "img-src 'self' data: blob:; " .
+               "media-src 'self' data: blob:; " .
+               "script-src 'self' 'unsafe-inline' 'unsafe-eval' blob:; " .
+               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; " .
+               "font-src 'self' data: https://fonts.gstatic.com; " .
+               "worker-src 'self' blob:; " .
+               "child-src 'self' blob:; " .
+               "connect-src 'none'; " .
+               "frame-ancestors *;";
 
         return response($html, 200, [
             'Content-Type' => 'text/html; charset=UTF-8',
