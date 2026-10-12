@@ -18,9 +18,10 @@ ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
 
-# Allow .htaccess overrides in /var/www/html/public
+# Allow .htaccess overrides in /var/www/html/public and suppress ServerName warning
 RUN printf '<Directory /var/www/html/public>\n    Options Indexes FollowSymLinks\n    AllowOverride All\n    Require all granted\n</Directory>\n' > /etc/apache2/conf-available/laravel.conf \
-    && a2enconf laravel
+    && a2enconf laravel \
+    && echo "ServerName localhost" >> /etc/apache2/apache2.conf
 
 # Install Composer from official image
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -34,8 +35,10 @@ RUN composer install --no-dev --no-scripts --no-autoloader --prefer-dist --ignor
 # Copy the rest of the application files
 COPY . .
 
-# Finish composer autoload optimization
-RUN composer dump-autoload --optimize --no-dev
+# Finish composer autoload optimization and set proper web permissions
+RUN composer dump-autoload --optimize --no-dev \
+    && chown -R www-data:www-data /var/www/html \
+    && chmod -R 755 /var/www/html
 
 # Setup entrypoint script
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
