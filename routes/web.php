@@ -17,56 +17,6 @@ Route::get('/.well-known/oauth-protected-resource', [OAuthController::class, 'pr
 Route::get('/.well-known/oauth-authorization-server', [OAuthController::class, 'authorizationServer'])->name('oauth.discovery.server');
 Route::get('/.well-known/openai-apps-challenge', [OAuthController::class, 'openaiChallenge'])->name('openai.challenge');
 Route::get('/healthz', fn () => response('OK', 200))->name('healthz');
-Route::get('/api/internal-diag', function (\Illuminate\Http\Request $request) {
-    if ($request->query('secret') !== 'mcp_diag_984372') {
-        return response()->json(['error' => 'forbidden'], 403);
-    }
-    $uuid = '7fc60aad-eb8c-42f2-b504-eaee9eec19a3';
-    $project = \App\Models\Project::where('uuid', $uuid)->first();
-    $files = $project ? $project->files()->get() : [];
-    $users = \App\Models\User::all(['id', 'email', 'name', 'role']);
-    $tokens = \App\Models\OAuthAccessToken::latest()->take(5)->get(['id', 'user_id', 'client_id', 'revoked', 'expires_at']);
-    
-    $storage = new \App\Services\ProjectStorageService();
-    $diskDir = $project ? $storage->getProjectDirectory($project) : null;
-    $diskFiles = [];
-    $indexContent = null;
-    $indexHash = null;
-    if ($diskDir && file_exists($diskDir)) {
-        $diskFiles = scandir($diskDir);
-        $indexPath = $diskDir . '/index.html';
-        if (file_exists($indexPath)) {
-            $indexContent = file_get_contents($indexPath);
-            $indexHash = hash('sha256', $indexContent);
-        }
-    }
-
-    $allStorageFiles = [];
-    if (file_exists(storage_path('app'))) {
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(storage_path('app')));
-        foreach ($iterator as $f) {
-            if ($f->isFile()) {
-                $allStorageFiles[] = [
-                    'path' => $f->getPathname(),
-                    'size' => $f->getSize(),
-                    'hash' => hash_file('sha256', $f->getPathname()),
-                ];
-            }
-        }
-    }
-
-    return response()->json([
-        'project' => $project,
-        'files' => $files,
-        'users' => $users,
-        'tokens' => $tokens,
-        'disk_dir' => $diskDir,
-        'disk_files' => $diskFiles,
-        'index_hash' => $indexHash,
-        'index_length' => $indexContent ? strlen($indexContent) : 0,
-        'all_storage_files' => $allStorageFiles,
-    ]);
-});
 
 /*
 |--------------------------------------------------------------------------
