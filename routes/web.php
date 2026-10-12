@@ -41,8 +41,17 @@ Route::options('/mcp', function () {
         'Access-Control-Allow-Headers' => 'Content-Type, Authorization, X-Requested-With, Baggage, Sentry-Trace',
     ]);
 });
+Route::options('/mcp/', function () {
+    return response('', 204, [
+        'Access-Control-Allow-Origin' => '*',
+        'Access-Control-Allow-Methods' => 'POST, GET, OPTIONS',
+        'Access-Control-Allow-Headers' => 'Content-Type, Authorization, X-Requested-With, Baggage, Sentry-Trace',
+    ]);
+});
 Route::post('/mcp', [McpController::class, 'handle'])->name('mcp.handle');
+Route::post('/mcp/', [McpController::class, 'handle']);
 Route::get('/mcp', [McpController::class, 'sse'])->name('mcp.sse');
+Route::get('/mcp/', [McpController::class, 'sse']);
 
 /*
 |--------------------------------------------------------------------------

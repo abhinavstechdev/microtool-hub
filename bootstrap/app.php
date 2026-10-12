@@ -15,9 +15,8 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->trustProxies(at: '*');
         $middleware->validateCsrfTokens(except: [
             'mcp',
-            'oauth/token',
-            'oauth/revoke',
-            'oauth/register',
+            'mcp/*',
+            'oauth/*',
             '.well-known/*',
         ]);
     })

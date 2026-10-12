@@ -60,7 +60,7 @@ class McpController extends Controller
                         'jsonrpc' => '2.0',
                         'id' => $id,
                         'result' => [
-                            'protocolVersion' => '2024-11-05',
+                            'protocolVersion' => $params['protocolVersion'] ?? '2024-11-05',
                             'capabilities' => [
                                 'tools' => [
                                     'listChanged' => false
