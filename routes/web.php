@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/.well-known/oauth-protected-resource', [OAuthController::class, 'protectedResource'])->name('oauth.discovery.resource');
 Route::get('/.well-known/oauth-authorization-server', [OAuthController::class, 'authorizationServer'])->name('oauth.discovery.server');
 Route::get('/.well-known/openai-apps-challenge', [OAuthController::class, 'openaiChallenge'])->name('openai.challenge');
+Route::get('/healthz', fn () => response('OK', 200))->name('healthz');
 
 /*
 |--------------------------------------------------------------------------
