@@ -145,12 +145,12 @@ class McpService
             ],
             [
                 'name' => 'read_project_file',
-                'description' => 'Read raw text source code of a file within a project.',
+                'description' => 'Read the text content of a web asset (HTML, CSS, JS, JSON, SVG, MD) within a project workspace.',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
-                        'project_id' => ['type' => 'string', 'description' => 'Project ID or UUID.'],
-                        'path' => ['type' => 'string', 'description' => 'Relative file path (e.g. index.html, style.css).']
+                        'project_id' => ['type' => 'string', 'description' => 'Project ID, UUID, or slug.'],
+                        'path' => ['type' => 'string', 'maxLength' => 255, 'description' => 'Relative file path inside the project workspace (e.g. index.html, style.css).']
                     ],
                     'required' => ['project_id', 'path']
                 ],
@@ -164,13 +164,13 @@ class McpService
             ],
             [
                 'name' => 'write_project_file',
-                'description' => 'Create or overwrite a source file in the project workspace.',
+                'description' => 'Save or update a web asset file (HTML, CSS, JS, JSON, SVG, MD) in the project workspace.',
                 'inputSchema' => [
                     'type' => 'object',
                     'properties' => [
-                        'project_id' => ['type' => 'string', 'description' => 'Project ID or UUID.'],
-                        'path' => ['type' => 'string', 'description' => 'Relative file path (e.g. index.html, style.css, app.js).'],
-                        'content' => ['type' => 'string', 'description' => 'Source code contents to write.']
+                        'project_id' => ['type' => 'string', 'description' => 'Project ID, UUID, or slug.'],
+                        'path' => ['type' => 'string', 'maxLength' => 255, 'description' => 'Relative file path inside the project workspace (e.g. index.html, style.css, app.js).'],
+                        'content' => ['type' => 'string', 'maxLength' => 512000, 'description' => 'Text content of the web asset to save.']
                     ],
                     'required' => ['project_id', 'path', 'content']
                 ],
@@ -488,18 +488,28 @@ class McpService
     }
 
     /**
-     * Resolve project by ID, UUID, or Slug for a specific user
+     * Resolve project by ID, UUID, or Slug for a specific user or admin
      */
-    public function resolveUserProject(User $user, string $identifier): Project
+    public function resolveUserProject(User $user, string|int $identifier): Project
     {
-        $project = Project::where('user_id', $user->id)
-            ->where(function ($q) use ($identifier) {
-                if (is_numeric($identifier)) {
-                    $q->orWhere('id', (int) $identifier);
-                }
-                $q->orWhere('uuid', $identifier)
-                  ->orWhere('slug', $identifier);
-            })->first();
+        $identifierStr = (string) $identifier;
+        $isUuid = Str::isUuid($identifierStr);
+        $isNumeric = is_numeric($identifierStr);
+
+        $query = Project::query();
+        if ($user->role !== 'admin') {
+            $query->where('user_id', $user->id);
+        }
+
+        $project = $query->where(function ($q) use ($identifierStr, $isUuid, $isNumeric) {
+            if ($isNumeric) {
+                $q->orWhere('id', (int) $identifierStr);
+            }
+            if ($isUuid) {
+                $q->orWhere('uuid', $identifierStr);
+            }
+            $q->orWhere('slug', $identifierStr);
+        })->first();
 
         if (!$project) {
             throw new RuntimeException("Project '{$identifier}' not found or access denied.");
@@ -511,21 +521,27 @@ class McpService
     /**
      * Resolve public or owned project
      */
-    public function resolveAnyProject(?User $user, string $identifier): Project
+    public function resolveAnyProject(?User $user, string|int $identifier): Project
     {
-        $project = Project::where(function ($q) use ($identifier) {
-            if (is_numeric($identifier)) {
-                $q->orWhere('id', (int) $identifier);
+        $identifierStr = (string) $identifier;
+        $isUuid = Str::isUuid($identifierStr);
+        $isNumeric = is_numeric($identifierStr);
+
+        $project = Project::where(function ($q) use ($identifierStr, $isUuid, $isNumeric) {
+            if ($isNumeric) {
+                $q->orWhere('id', (int) $identifierStr);
             }
-            $q->orWhere('uuid', $identifier)
-              ->orWhere('slug', $identifier);
+            if ($isUuid) {
+                $q->orWhere('uuid', $identifierStr);
+            }
+            $q->orWhere('slug', $identifierStr);
         })->first();
 
         if (!$project) {
             throw new RuntimeException("Tool '{$identifier}' not found.");
         }
 
-        if ($project->visibility !== 'public' && (!$user || $project->user_id !== $user->id)) {
+        if ($project->visibility !== 'public' && (!$user || ($project->user_id !== $user->id && $user->role !== 'admin'))) {
             throw new RuntimeException("Project is private.");
         }
 

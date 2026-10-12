@@ -274,6 +274,19 @@ class McpController extends Controller
                     ], 404, ['Access-Control-Allow-Origin' => '*']);
             }
         } catch (Throwable $e) {
+            if ($method === 'tools/call') {
+                return response()->json([
+                    'jsonrpc' => '2.0',
+                    'id' => $id,
+                    'result' => [
+                        'content' => [
+                            ['type' => 'text', 'text' => "Error: " . $e->getMessage()]
+                        ],
+                        'isError' => true,
+                    ]
+                ], 200, ['Access-Control-Allow-Origin' => '*']);
+            }
+
             return response()->json([
                 'jsonrpc' => '2.0',
                 'id' => $id,
