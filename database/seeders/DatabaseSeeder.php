@@ -29,43 +29,50 @@ class DatabaseSeeder extends Seeder
 
         $categoryModels = [];
         foreach ($categories as $cat) {
-            $categoryModels[$cat['slug']] = ToolCategory::create($cat);
+            $categoryModels[$cat['slug']] = ToolCategory::firstOrCreate(['slug' => $cat['slug']], $cat);
         }
 
         // 2. Create Users
-        $admin = User::create([
-            'name' => 'Admin User',
-            'username' => 'admin',
-            'email' => 'admin@microtoolhub.com',
-            'password' => Hash::make('adminpassword123'),
-            'role' => 'admin',
-            'bio' => 'System administrator for MicroTool Hub.',
-            'storage_quota_bytes' => 52428800, // 50MB
-        ]);
+        $admin = User::firstOrCreate(
+            ['email' => 'admin@microtoolhub.com'],
+            [
+                'name' => 'Admin User',
+                'username' => 'admin',
+                'password' => Hash::make('adminpassword123'),
+                'role' => 'admin',
+                'bio' => 'System administrator for MicroTool Hub.',
+                'storage_quota_bytes' => 52428800, // 50MB
+            ]
+        );
 
-        $creator = User::create([
-            'name' => 'Alex Rivera',
-            'username' => 'alexdev',
-            'email' => 'alex@microtoolhub.com',
-            'password' => Hash::make('password123'),
-            'role' => 'user',
-            'bio' => 'Web developer passionate about fast, accessible micro-tools.',
-            'storage_quota_bytes' => 20971520, // 20MB
-        ]);
+        $creator = User::firstOrCreate(
+            ['email' => 'alex@microtoolhub.com'],
+            [
+                'name' => 'Alex Rivera',
+                'username' => 'alexdev',
+                'password' => Hash::make('password123'),
+                'role' => 'user',
+                'bio' => 'Web developer passionate about fast, accessible micro-tools.',
+                'storage_quota_bytes' => 20971520, // 20MB
+            ]
+        );
 
         // 3. Create Default OAuth Client for ChatGPT
-        OAuthClient::create([
-            'user_id' => $admin->id,
-            'client_id' => 'chatgpt_client_microtool',
-            'client_secret' => 'chatgpt_secret_microtool_2026',
-            'name' => 'ChatGPT Official Plugin Connector',
-            'redirect_uris' => "https://chatgpt.com/aip/plugin-oauth/callback\nhttps://chat.openai.com/aip/plugin-oauth/callback\nhttp://localhost:8000/oauth/callback",
-            'is_confidential' => true,
-            'revoked' => false,
-        ]);
+        OAuthClient::firstOrCreate(
+            ['client_id' => 'chatgpt_client_microtool'],
+            [
+                'user_id' => $admin->id,
+                'client_secret' => 'chatgpt_secret_microtool_2026',
+                'name' => 'ChatGPT Official Plugin Connector',
+                'redirect_uris' => "https://chatgpt.com/aip/plugin-oauth/callback\nhttps://chat.openai.com/aip/plugin-oauth/callback\nhttps://chatgpt.com/api/v1/plugins/oauth/callback\nhttp://localhost:8000/oauth/callback",
+                'is_confidential' => true,
+                'revoked' => false,
+            ]
+        );
 
         // 4. Create Sample Tool: JSON Formatter & Validator
-        $p1 = Project::create([
+        if (Project::where('slug', 'json-formatter')->doesntExist()) {
+            $p1 = Project::create([
             'user_id' => $creator->id,
             'uuid' => (string) Str::uuid(),
             'name' => 'JSON Formatter & Validator',
@@ -263,13 +270,15 @@ document.getElementById('sampleBtn').addEventListener('click', () => {
 input.addEventListener('input', updateStats);
 JS;
 
-        $storage->writeFile($p1, 'index.html', $jsonHtml);
-        $storage->writeFile($p1, 'style.css', $jsonCss);
-        $storage->writeFile($p1, 'app.js', $jsonJs);
-        $storage->createSnapshot($p1, 'v1.0.0', 'Initial release');
+            $storage->writeFile($p1, 'index.html', $jsonHtml);
+            $storage->writeFile($p1, 'style.css', $jsonCss);
+            $storage->writeFile($p1, 'app.js', $jsonJs);
+            $storage->createSnapshot($p1, 'v1.0.0', 'Initial release');
+        }
 
         // 5. Create Sample Tool: CSS Box-Shadow Generator
-        $p2 = Project::create([
+        if (Project::where('slug', 'box-shadow-generator')->doesntExist()) {
+            $p2 = Project::create([
             'user_id' => $creator->id,
             'uuid' => (string) Str::uuid(),
             'name' => 'CSS Box-Shadow Generator',
@@ -416,9 +425,10 @@ document.getElementById('copyBtn').addEventListener('click', () => {
 });
 JS;
 
-        $storage->writeFile($p2, 'index.html', $shadowHtml);
-        $storage->writeFile($p2, 'style.css', $shadowCss);
-        $storage->writeFile($p2, 'app.js', $shadowJs);
-        $storage->createSnapshot($p2, 'v1.0.0', 'Initial release');
+            $storage->writeFile($p2, 'index.html', $shadowHtml);
+            $storage->writeFile($p2, 'style.css', $shadowCss);
+            $storage->writeFile($p2, 'app.js', $shadowJs);
+            $storage->createSnapshot($p2, 'v1.0.0', 'Initial release');
+        }
     }
 }

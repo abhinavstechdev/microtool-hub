@@ -22,6 +22,8 @@ chmod -R 775 storage bootstrap/cache
 if [ "$RUN_MIGRATIONS" = "true" ] || [ "$AUTO_MIGRATE" = "true" ]; then
     echo "Running database migrations..."
     php artisan migrate --force --no-interaction || true
+    echo "Running database seeders..."
+    php artisan db:seed --force --no-interaction || true
 fi
 
 exec "$@"

@@ -99,8 +99,15 @@
 
         <h6 class="fw-bold small text-uppercase text-muted mt-3 mb-2">Option B: OAuth 2.1</h6>
         <p class="text-muted small">
-          When configuring an Agent Plugin in ChatGPT Work, OpenAI discovers our RFC 9728 metadata automatically at:
+          When configuring an Agent Plugin in ChatGPT, expand <strong>Advanced OAuth settings</strong> and enter:
         </p>
+        <div class="p-2 bg-body rounded border font-mono small mb-2">
+          <div class="text-muted" style="font-size:0.75rem;">CLIENT ID</div>
+          <div class="text-info fw-bold user-select-all">chatgpt_client_microtool</div>
+          <div class="text-muted mt-2" style="font-size:0.75rem;">CLIENT SECRET</div>
+          <div class="text-info fw-bold user-select-all">chatgpt_secret_microtool_2026</div>
+        </div>
+        <p class="text-muted small mb-1">RFC 9728 Discovery URL:</p>
         <code class="d-block p-2 bg-body rounded border font-mono small text-muted mb-3 text-break">
           {{ url('/.well-known/oauth-protected-resource') }}
         </code>
