@@ -271,6 +271,9 @@ class ProjectStorageService
             if (File::exists($abs) && File::isFile($abs)) {
                 $zip->addFile($abs, $file->path);
                 $totalBytes += $file->size_bytes;
+            } elseif ($file->content !== null) {
+                $zip->addFromString($file->path, $file->content);
+                $totalBytes += strlen($file->content);
             }
         }
 
