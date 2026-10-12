@@ -1,0 +1,31 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "microtool-hub": {
+      "type": "streamable-http",
+      "url": "https://microtoolhub.com/mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "oauth",
+            "client": {
+              "mode": "provided",
+              "clientId": "chatgpt_client_microtool",
+              "tokenEndpointAuthMethod": "client_secret_basic"
+            },
+            "authorizationUrl": "https://microtoolhub.com/oauth/authorize",
+            "tokenUrl": "https://microtoolhub.com/oauth/token",
+            "baseScopes": [
+              "tools:read",
+              "projects:create",
+              "projects:read",
+              "files:write",
+              "files:delete",
+              "projects:publish"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

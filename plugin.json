@@ -1,0 +1,42 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "microtool-hub",
+  "version": "1.0.0",
+  "description": "Create, edit, preview, and publish web micro-tools directly in chat.",
+  "author": {
+    "name": "MicroTool Team",
+    "email": "developer@microtoolhub.com",
+    "url": "https://microtoolhub.com"
+  },
+  "homepage": "https://microtoolhub.com",
+  "repository": "https://github.com/example/microtool-hub",
+  "license": "MIT",
+  "extensions": {
+    "com.openai": {
+      "onboardingSkill": "./skills/setup/SKILL.md",
+      "interface": {
+        "displayName": "MicroTool Hub",
+        "shortDescription": "Build & run web micro-tools",
+        "longDescription": "MicroTool Hub connects ChatGPT to your personal web tool workspace. Create responsive calculators, converters, visual utilities, and mini-apps, inspect live interactive previews in chat, and publish them to the community.",
+        "developerName": "MicroTool Hub Team",
+        "category": "Developer Tools",
+        "capabilities": [
+          "Create and edit web micro-tools",
+          "Interactive in-chat preview widgets",
+          "Automated code validation and snapshots",
+          "Community publishing and forking"
+        ],
+        "websiteURL": "https://microtoolhub.com",
+        "privacyPolicyURL": "https://microtoolhub.com/privacy",
+        "termsOfServiceURL": "https://microtoolhub.com/terms",
+        "defaultPrompt": [
+          "Build a responsive timestamp and timezone converter",
+          "Create a clean CSS box-shadow generator with code copy",
+          "List my active micro-tool projects"
+        ],
+        "brandColor": "#0D6EFD",
+        "composerIcon": "./assets/icon.png"
+      }
+    }
+  }
+}
