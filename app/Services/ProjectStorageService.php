@@ -136,6 +136,7 @@ class ProjectStorageService
                 'size_bytes' => $size,
                 'mime_type' => $mime,
                 'hash' => $hash,
+                'content' => $content,
             ]
         );
 
@@ -150,10 +151,25 @@ class ProjectStorageService
     public function readFile(Project $project, string $relativePath): string
     {
         $fullPath = $this->resolveSafePath($project, $relativePath);
-        if (!File::exists($fullPath) || !File::isFile($fullPath)) {
-            throw new RuntimeException("File not found: '{$relativePath}'");
+        if (File::exists($fullPath) && File::isFile($fullPath)) {
+            return File::get($fullPath);
         }
-        return File::get($fullPath);
+
+        // Restore from persistent PostgreSQL record if disk was wiped during container deploy/restart
+        $dbFile = ProjectFile::where('project_id', $project->id)
+            ->where('path', $relativePath)
+            ->first();
+
+        if ($dbFile && $dbFile->content !== null) {
+            $dir = dirname($fullPath);
+            if (!File::isDirectory($dir)) {
+                File::makeDirectory($dir, 0755, true);
+            }
+            File::put($fullPath, $dbFile->content);
+            return $dbFile->content;
+        }
+
+        throw new RuntimeException("File not found: '{$relativePath}'");
     }
 
     /**

@@ -221,9 +221,9 @@ class McpController extends Controller
                     $toolName = $params['name'] ?? '';
                     $arguments = $params['arguments'] ?? [];
 
-                    // Fallback to demo user if unauthenticated for testing and read tools
+                    // Fallback to admin/demo user if unauthenticated for testing and read tools
                     if (!$user) {
-                        $user = User::first();
+                        $user = User::where('role', 'admin')->first() ?? User::first();
                     }
 
                     if (!$user) {

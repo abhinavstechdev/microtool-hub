@@ -18,6 +18,7 @@ class ProjectFile extends Model
         'size_bytes',
         'mime_type',
         'hash',
+        'content',
     ];
 
     protected function casts(): array

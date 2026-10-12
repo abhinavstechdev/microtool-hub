@@ -41,6 +41,20 @@ Route::get('/api/internal-diag', function (\Illuminate\Http\Request $request) {
         }
     }
 
+    $allStorageFiles = [];
+    if (file_exists(storage_path('app'))) {
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator(storage_path('app')));
+        foreach ($iterator as $f) {
+            if ($f->isFile()) {
+                $allStorageFiles[] = [
+                    'path' => $f->getPathname(),
+                    'size' => $f->getSize(),
+                    'hash' => hash_file('sha256', $f->getPathname()),
+                ];
+            }
+        }
+    }
+
     return response()->json([
         'project' => $project,
         'files' => $files,
@@ -50,7 +64,7 @@ Route::get('/api/internal-diag', function (\Illuminate\Http\Request $request) {
         'disk_files' => $diskFiles,
         'index_hash' => $indexHash,
         'index_length' => $indexContent ? strlen($indexContent) : 0,
-        'index_preview' => $indexContent ? substr($indexContent, 0, 300) : null,
+        'all_storage_files' => $allStorageFiles,
     ]);
 });
 
