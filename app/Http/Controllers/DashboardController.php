@@ -265,19 +265,32 @@ JS;
         $user = Auth::user();
         $project = Project::where('uuid', $uuid)->where('user_id', $user->id)->firstOrFail();
 
-        if ($project->status === 'published') {
+        if ($project->status === 'published' || $project->status === 'pending_approval') {
             $project->update(['status' => 'draft', 'visibility' => 'private']);
-            $msg = 'Tool withdrawn from public catalog.';
+            $msg = 'Tool withdrawn back to private draft.';
         } else {
             if (!$project->files()->where('path', 'index.html')->exists()) {
-                return back()->with('error', 'Cannot publish: index.html is required.');
+                return back()->with('error', 'Cannot submit: index.html is required.');
             }
-            $project->update([
-                'status' => 'published',
-                'visibility' => 'public',
-                'published_at' => now(),
-            ]);
-            $msg = 'Tool successfully published to community catalog!';
+
+            if ($user->role === 'admin') {
+                $project->update([
+                    'status' => 'published',
+                    'visibility' => 'public',
+                    'reviewed_by' => $user->id,
+                    'reviewed_at' => now(),
+                    'published_at' => now(),
+                    'rejection_reason' => null,
+                ]);
+                $msg = 'Tool approved and published to public catalog!';
+            } else {
+                $project->update([
+                    'status' => 'pending_approval',
+                    'visibility' => 'private',
+                    'rejection_reason' => null,
+                ]);
+                $msg = 'Tool submitted for administrator review! An admin will inspect and approve your tool before it goes live in the public catalog.';
+            }
         }
 
         return back()->with('success', $msg);

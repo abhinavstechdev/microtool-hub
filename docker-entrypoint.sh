@@ -18,10 +18,12 @@ mkdir -p storage/framework/cache/data storage/framework/sessions storage/framewo
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
-# Run database migrations if RUN_MIGRATIONS is set to true
+# Ensure database migrations are always up-to-date
+echo "Running database migrations..."
+php artisan migrate --force --no-interaction || true
+
+# Run database seeders if RUN_MIGRATIONS is set to true
 if [ "$RUN_MIGRATIONS" = "true" ] || [ "$AUTO_MIGRATE" = "true" ]; then
-    echo "Running database migrations..."
-    php artisan migrate --force --no-interaction || true
     echo "Running database seeders..."
     php artisan db:seed --force --no-interaction || true
 fi

@@ -57,9 +57,23 @@
       <div class="col-md-6 col-lg-4">
         <div class="card h-100 tool-card p-3 d-flex flex-column">
           <div class="d-flex justify-content-between align-items-start mb-2">
-            <span class="badge {{ $project->status === 'published' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning' }} small text-uppercase">
-              {{ $project->status }}
-            </span>
+            @if($project->status === 'published')
+              <span class="badge bg-success-subtle text-success small font-mono">
+                <i class="bi bi-check-circle-fill me-1"></i>PUBLISHED
+              </span>
+            @elseif($project->status === 'pending_approval')
+              <span class="badge bg-warning text-dark small font-mono">
+                <i class="bi bi-hourglass-split me-1"></i>UNDER REVIEW
+              </span>
+            @elseif($project->status === 'rejected')
+              <span class="badge bg-danger text-white small font-mono">
+                <i class="bi bi-x-circle-fill me-1"></i>REJECTED
+              </span>
+            @else
+              <span class="badge bg-secondary-subtle text-secondary small font-mono">
+                <i class="bi bi-file-earmark-code me-1"></i>DRAFT
+              </span>
+            @endif
             <span class="badge bg-body-tertiary border text-muted small font-mono">{{ $project->visibility }}</span>
           </div>
 
@@ -73,6 +87,17 @@
             {{ Str::limit($project->description ?? 'No description provided.', 80) }}
           </p>
 
+          @if($project->status === 'rejected' && $project->rejection_reason)
+            <div class="alert alert-danger p-2 mb-2 small rounded-2" style="font-size: 0.8rem; background: var(--color-error-bg); border: 1px solid var(--color-error);">
+              <div class="fw-semibold mb-1"><i class="bi bi-info-circle me-1"></i>Admin Feedback:</div>
+              {{ $project->rejection_reason }}
+            </div>
+          @elseif($project->status === 'pending_approval')
+            <div class="alert alert-warning p-2 mb-2 small rounded-2" style="font-size: 0.8rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); color: #d97706;">
+              <i class="bi bi-clock-history me-1"></i> Awaiting administrator review. AI code check and safety scan in progress.
+            </div>
+          @endif
+
           <div class="d-flex justify-content-between align-items-center pt-2 border-top small text-muted font-mono mb-3">
             <span>{{ $project->file_count }} files</span>
             <span>{{ round($project->storage_bytes / 1024, 1) }} KB</span>
@@ -83,15 +108,25 @@
             <a href="{{ route('dashboard.studio', $project->uuid) }}" class="btn btn-sm btn-primary flex-grow-1">
               <i class="bi bi-code-slash me-1"></i> Open Studio
             </a>
-            <a href="{{ route('preview.show', $project->slug) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Preview">
+            <a href="{{ route('preview.show', $project->slug) }}" target="_blank" class="btn btn-sm btn-outline-secondary" title="Preview Tool">
               <i class="bi bi-play"></i>
             </a>
-            <!-- Publish Toggle -->
+            <!-- Publish / Review Submit Toggle -->
             <form action="{{ route('dashboard.projects.publish', $project->uuid) }}" method="POST">
               @csrf
-              <button type="submit" class="btn btn-sm {{ $project->status === 'published' ? 'btn-outline-warning' : 'btn-outline-success' }}" title="{{ $project->status === 'published' ? 'Unpublish' : 'Publish' }}">
-                <i class="bi bi-globe"></i>
-              </button>
+              @if($project->status === 'published')
+                <button type="submit" class="btn btn-sm btn-outline-warning" title="Withdraw from Public Catalog">
+                  <i class="bi bi-eye-slash"></i>
+                </button>
+              @elseif($project->status === 'pending_approval')
+                <button type="submit" class="btn btn-sm btn-outline-danger" title="Cancel Submission (Return to Draft)">
+                  <i class="bi bi-x-circle"></i>
+                </button>
+              @else
+                <button type="submit" class="btn btn-sm btn-outline-success" title="{{ auth()->user()->role === 'admin' ? 'Publish Immediately' : 'Submit for Admin Approval' }}">
+                  <i class="bi bi-send-check"></i>
+                </button>
+              @endif
             </form>
             <!-- Delete -->
             <form action="{{ route('dashboard.projects.delete', $project->uuid) }}" method="POST" onsubmit="return confirm('Delete this project permanently?');">

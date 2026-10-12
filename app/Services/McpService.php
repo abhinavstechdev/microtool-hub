@@ -484,6 +484,79 @@ class McpService
                     'openai/toolInvocation/invoked' => 'Overview retrieved.',
                 ]
             ],
+            [
+                'name' => 'list_pending_tools',
+                'description' => 'Administrator tool: List all micro-tools submitted by creators awaiting review and approval for the public catalog.',
+                'inputSchema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'limit' => ['type' => 'integer', 'default' => 20, 'description' => 'Max number of tools to return.']
+                    ]
+                ],
+                '_meta' => [
+                    'readOnlyHint' => true,
+                    'openWorldHint' => false,
+                    'destructiveHint' => false,
+                    'openai/toolInvocation/invoking' => 'Loading pending tools for review…',
+                    'openai/toolInvocation/invoked' => 'Pending review list loaded.',
+                ]
+            ],
+            [
+                'name' => 'audit_tool_code',
+                'description' => 'Administrator tool: Retrieve full source code (HTML, CSS, JS) and security analysis to verify client-side isolation and safety.',
+                'inputSchema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'project_id' => ['type' => 'string', 'description' => 'Project ID, UUID, or slug to inspect.']
+                    ],
+                    'required' => ['project_id']
+                ],
+                '_meta' => [
+                    'readOnlyHint' => true,
+                    'openWorldHint' => false,
+                    'destructiveHint' => false,
+                    'openai/toolInvocation/invoking' => 'Retrieving tool source code for security review…',
+                    'openai/toolInvocation/invoked' => 'Source code and audit checklist loaded.',
+                ]
+            ],
+            [
+                'name' => 'approve_tool',
+                'description' => 'Administrator tool: Approve a pending micro-tool and publish it live to the public community catalog.',
+                'inputSchema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'project_id' => ['type' => 'string', 'description' => 'Project ID, UUID, or slug to approve.'],
+                        'notes' => ['type' => 'string', 'description' => 'Optional approval notes.']
+                    ],
+                    'required' => ['project_id']
+                ],
+                '_meta' => [
+                    'readOnlyHint' => false,
+                    'openWorldHint' => false,
+                    'destructiveHint' => false,
+                    'openai/toolInvocation/invoking' => 'Approving and publishing tool…',
+                    'openai/toolInvocation/invoked' => 'Tool approved and published.',
+                ]
+            ],
+            [
+                'name' => 'reject_tool',
+                'description' => 'Administrator tool: Reject a tool submitted for publication, providing constructive feedback for the creator.',
+                'inputSchema' => [
+                    'type' => 'object',
+                    'properties' => [
+                        'project_id' => ['type' => 'string', 'description' => 'Project ID, UUID, or slug to reject.'],
+                        'reason' => ['type' => 'string', 'description' => 'Constructive feedback explaining what to fix.']
+                    ],
+                    'required' => ['project_id', 'reason']
+                ],
+                '_meta' => [
+                    'readOnlyHint' => false,
+                    'openWorldHint' => false,
+                    'destructiveHint' => false,
+                    'openai/toolInvocation/invoking' => 'Rejecting tool submission…',
+                    'openai/toolInvocation/invoked' => 'Rejection recorded.',
+                ]
+            ],
         ];
     }
 
@@ -913,29 +986,199 @@ class McpService
                     throw new RuntimeException("Cannot publish: 'index.html' is missing.");
                 }
 
-                // Create published snapshot if not present
-                if (!$project->snapshots()->where('version_tag', $tag)->exists()) {
-                    $this->storage->createSnapshot($project, $tag, 'Published ' . $tag);
+                // If user is admin, approve and publish directly
+                if ($user->role === 'admin') {
+                    if (!$project->snapshots()->where('version_tag', $tag)->exists()) {
+                        $this->storage->createSnapshot($project, $tag, 'Published ' . $tag);
+                    }
+
+                    $project->update([
+                        'status' => 'published',
+                        'visibility' => 'public',
+                        'current_version' => $tag,
+                        'reviewed_by' => $user->id,
+                        'reviewed_at' => now(),
+                        'published_at' => now(),
+                        'rejection_reason' => null,
+                    ]);
+
+                    AuditLog::record($user->id, $project->id, 'project:publish', ['version' => $tag]);
+
+                    return [
+                        'structuredContent' => [
+                            'published' => true,
+                            'status' => 'published',
+                            'tool_url' => url('/tools/' . $project->slug),
+                            'preview_url' => url('/preview/' . $project->slug),
+                            'version' => $tag,
+                        ],
+                        'content' => [
+                            ['type' => 'text', 'text' => "Tool '{$project->name}' approved and published successfully! Community URL: " . url('/tools/' . $project->slug)]
+                        ]
+                    ];
+                }
+
+                // For regular users: Submit for administrator review
+                $project->update([
+                    'status' => 'pending_approval',
+                    'visibility' => 'private',
+                    'current_version' => $tag,
+                    'rejection_reason' => null,
+                ]);
+
+                AuditLog::record($user->id, $project->id, 'project:submit_review', ['version' => $tag]);
+
+                return [
+                    'structuredContent' => [
+                        'submitted_for_review' => true,
+                        'status' => 'pending_approval',
+                        'project_id' => $project->id,
+                        'name' => $project->name,
+                    ],
+                    'content' => [
+                        ['type' => 'text', 'text' => "Submitted tool '{$project->name}' for administrator review! An admin will review and approve your tool before it appears in the public catalog."]
+                    ]
+                ];
+
+            case 'list_pending_tools':
+                if ($user->role !== 'admin') {
+                    throw new RuntimeException("Administrator privileges required to list pending tools.");
+                }
+
+                $limit = min((int) ($args['limit'] ?? 20), 50);
+                $pending = Project::where('status', 'pending_approval')
+                    ->with(['user', 'category', 'files'])
+                    ->latest('updated_at')
+                    ->limit($limit)
+                    ->get()
+                    ->map(fn($p) => [
+                        'id' => $p->id,
+                        'uuid' => $p->uuid,
+                        'name' => $p->name,
+                        'slug' => $p->slug,
+                        'creator' => $p->user->name,
+                        'category' => $p->category?->name,
+                        'files_count' => $p->files->count(),
+                        'submitted_at' => $p->updated_at->toIso8601String(),
+                        'preview_url' => url('/preview/' . $p->slug),
+                    ])
+                    ->toArray();
+
+                return [
+                    'structuredContent' => ['pending_tools' => $pending],
+                    'content' => [
+                        ['type' => 'text', 'text' => "Found " . count($pending) . " tool(s) awaiting administrator review."]
+                    ]
+                ];
+
+            case 'audit_tool_code':
+                if ($user->role !== 'admin') {
+                    $project = $this->resolveUserProject($user, $args['project_id']);
+                } else {
+                    $project = $this->resolveAnyProject($user, $args['project_id']);
+                }
+
+                $filesContent = [];
+                foreach ($project->files as $f) {
+                    try {
+                        $filesContent[$f->path] = $this->storage->readFile($project, $f->path);
+                    } catch (\Throwable $e) {
+                        $filesContent[$f->path] = $f->content ?? '';
+                    }
+                }
+
+                $hasIndex = isset($filesContent['index.html']) && strlen($filesContent['index.html']) > 0;
+                $htmlCode = $filesContent['index.html'] ?? '';
+                $jsCode = $filesContent['app.js'] ?? '';
+
+                $hasNetwork = (bool) preg_match('/fetch\(|XMLHttpRequest|sendBeacon|WebSocket/i', $htmlCode . $jsCode);
+                $hasEval = (bool) preg_match('/\beval\s*\(/i', $htmlCode . $jsCode);
+                $hasCookie = (bool) preg_match('/document\.cookie/i', $htmlCode . $jsCode);
+
+                $auditSummary = [
+                    'project' => [
+                        'id' => $project->id,
+                        'uuid' => $project->uuid,
+                        'name' => $project->name,
+                        'slug' => $project->slug,
+                        'status' => $project->status,
+                        'author' => $project->user->name,
+                    ],
+                    'automated_checks' => [
+                        'has_index_html' => $hasIndex,
+                        'outbound_network_detected' => $hasNetwork,
+                        'eval_detected' => $hasEval,
+                        'cookie_access_detected' => $hasCookie,
+                    ],
+                    'source_files' => $filesContent,
+                ];
+
+                return [
+                    'structuredContent' => $auditSummary,
+                    'content' => [
+                        ['type' => 'text', 'text' => "Audit data for '{$project->name}' (Status: {$project->status}). Network calls: " . ($hasNetwork ? 'FLAGGED' : 'NONE') . ". Please review code for sandbox compliance, then call approve_tool or reject_tool."]
+                    ]
+                ];
+
+            case 'approve_tool':
+                if ($user->role !== 'admin') {
+                    throw new RuntimeException("Administrator privileges required to approve tools.");
+                }
+
+                $project = $this->resolveAnyProject($user, $args['project_id']);
+
+                if (!$project->files()->where('path', 'index.html')->exists()) {
+                    throw new RuntimeException("Cannot approve tool without 'index.html'.");
                 }
 
                 $project->update([
                     'status' => 'published',
                     'visibility' => 'public',
-                    'current_version' => $tag,
+                    'reviewed_by' => $user->id,
+                    'reviewed_at' => now(),
                     'published_at' => now(),
+                    'rejection_reason' => null,
                 ]);
 
-                AuditLog::record($user->id, $project->id, 'project:publish', ['version' => $tag]);
+                AuditLog::record($user->id, $project->id, 'admin:mcp_approve', ['name' => $project->name]);
 
                 return [
                     'structuredContent' => [
-                        'published' => true,
+                        'approved' => true,
+                        'status' => 'published',
                         'tool_url' => url('/tools/' . $project->slug),
-                        'preview_url' => url('/preview/' . $project->slug),
-                        'version' => $tag,
                     ],
                     'content' => [
-                        ['type' => 'text', 'text' => "Tool '{$project->name}' published successfully! Community URL: " . url('/tools/' . $project->slug)]
+                        ['type' => 'text', 'text' => "Tool '{$project->name}' approved and published live to public catalog! URL: " . url('/tools/' . $project->slug)]
+                    ]
+                ];
+
+            case 'reject_tool':
+                if ($user->role !== 'admin') {
+                    throw new RuntimeException("Administrator privileges required to reject tools.");
+                }
+
+                $reason = trim($args['reason'] ?? 'Tool does not meet platform quality or security standards.');
+                $project = $this->resolveAnyProject($user, $args['project_id']);
+
+                $project->update([
+                    'status' => 'rejected',
+                    'visibility' => 'private',
+                    'reviewed_by' => $user->id,
+                    'reviewed_at' => now(),
+                    'rejection_reason' => $reason,
+                ]);
+
+                AuditLog::record($user->id, $project->id, 'admin:mcp_reject', ['name' => $project->name, 'reason' => $reason]);
+
+                return [
+                    'structuredContent' => [
+                        'rejected' => true,
+                        'status' => 'rejected',
+                        'reason' => $reason,
+                    ],
+                    'content' => [
+                        ['type' => 'text', 'text' => "Tool '{$project->name}' rejected. Feedback recorded: '{$reason}'."]
                     ]
                 ];
 

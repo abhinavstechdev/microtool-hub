@@ -30,6 +30,11 @@ class Project extends Model
         'file_count',
         'is_featured',
         'published_at',
+        'rejection_reason',
+        'reviewed_by',
+        'reviewed_at',
+        'ai_review_verdict',
+        'ai_review_report',
     ];
 
     protected function casts(): array
@@ -37,6 +42,7 @@ class Project extends Model
         return [
             'is_featured' => 'boolean',
             'published_at' => 'datetime',
+            'reviewed_at' => 'datetime',
             'likes_count' => 'integer',
             'views_count' => 'integer',
             'forks_count' => 'integer',
@@ -48,6 +54,11 @@ class Project extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function reviewer(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'reviewed_by');
     }
 
     public function category(): BelongsTo

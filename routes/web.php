@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdminModerationController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CommunityController;
 use App\Http\Controllers\DashboardController;
@@ -106,4 +107,12 @@ Route::middleware('auth')->group(function () {
     Route::post('/tools/{slug}/like', [CommunityController::class, 'toggleLike'])->name('tools.like');
     Route::post('/tools/{slug}/comment', [CommunityController::class, 'addComment'])->name('tools.comment');
     Route::post('/tools/{slug}/fork', [CommunityController::class, 'fork'])->name('tools.fork');
+
+    // Administrator Moderation Portal
+    Route::get('/admin/moderation', [AdminModerationController::class, 'index'])->name('admin.moderation');
+    Route::get('/admin/moderation/{uuid}/audit', [AdminModerationController::class, 'auditTool'])->name('admin.moderation.audit');
+    Route::post('/admin/moderation/{uuid}/approve', [AdminModerationController::class, 'approve'])->name('admin.moderation.approve');
+    Route::post('/admin/moderation/{uuid}/reject', [AdminModerationController::class, 'reject'])->name('admin.moderation.reject');
 });
+
+

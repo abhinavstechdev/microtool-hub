@@ -95,6 +95,18 @@
           </button>
 
           @auth
+            @if(auth()->user()->role === 'admin')
+              @php
+                $pendingQueueCount = \App\Models\Project::where('status', 'pending_approval')->count();
+              @endphp
+              <a href="{{ route('admin.moderation') }}" class="btn-outline-violet d-inline-flex align-items-center gap-1 text-decoration-none py-1 px-3 small" style="border-color: #8b5cf6; color: #a78bfa;">
+                <i class="bi bi-shield-check"></i>
+                <span class="d-none d-sm-inline">Moderation</span>
+                @if($pendingQueueCount > 0)
+                  <span class="badge rounded-pill bg-danger ms-1 font-mono small">{{ $pendingQueueCount }}</span>
+                @endif
+              </a>
+            @endif
             <a href="{{ route('dashboard.index') }}" class="btn-secondary-custom d-inline-flex align-items-center gap-1 text-decoration-none py-1 px-3 small">
               <i class="bi bi-speedometer2"></i> Dashboard
             </a>
@@ -102,9 +114,23 @@
               <button class="btn-secondary-custom dropdown-toggle d-flex align-items-center gap-2 py-1 px-3 small" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-person-circle"></i>
                 <span class="d-none d-sm-inline">{{ auth()->user()->name }}</span>
+                @if(auth()->user()->role === 'admin')
+                  <span class="badge bg-danger text-white font-mono" style="font-size: 0.6rem; padding: 2px 4px;">ADMIN</span>
+                @endif
               </button>
               <ul class="dropdown-menu dropdown-menu-end shadow border-subtle">
                 <li><h6 class="dropdown-header">Signed in as <strong>{{ auth()->user()->email }}</strong></h6></li>
+                @if(auth()->user()->role === 'admin')
+                  <li>
+                    <a class="dropdown-item text-warning fw-semibold" href="{{ route('admin.moderation') }}">
+                      <i class="bi bi-shield-lock me-2"></i>Admin Moderation Portal
+                      @if($pendingQueueCount > 0)
+                        <span class="badge rounded-pill bg-danger ms-1">{{ $pendingQueueCount }}</span>
+                      @endif
+                    </a>
+                  </li>
+                  <li><hr class="dropdown-divider"></li>
+                @endif
                 <li><a class="dropdown-item" href="{{ route('dashboard.index') }}"><i class="bi bi-kanban me-2"></i>My Projects</a></li>
                 <li><a class="dropdown-item" href="{{ route('dashboard.tokens') }}"><i class="bi bi-key me-2"></i>MCP Access Tokens</a></li>
                 <li><hr class="dropdown-divider"></li>
