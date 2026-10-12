@@ -50,7 +50,7 @@ graph TD
 ## 2. Technology Stack & Operational Constraints
 
 - **Backend**: Laravel 11 / 12, PHP 8.3+ (CLI & FPM)
-- **Database**: MySQL 8.0+ (cPanel compatible, InnoDB, utf8mb4)
+- **Database**: PostgreSQL (Neon, Supabase, Render, AWS RDS, self-hosted), MySQL 8.0+ (cPanel compatible, InnoDB, utf8mb4), and SQLite
 - **Frontend**: Blade templates, Bootstrap 5.3+, Vanilla CSS & JavaScript (zero runtime Node.js dependency on server)
 - **MCP Server Protocol**: Streamable HTTP (`application/json` & `text/event-stream`), JSON-RPC 2.0
 - **MCP UI Standard**: MCP Apps open standard (`text/html;profile=mcp-app`) with `window.openai` bridge

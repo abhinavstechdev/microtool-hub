@@ -2,6 +2,7 @@
 
 [![PHP 8.3+](https://img.shields.io/badge/PHP-8.3%2B-blue.svg)](https://php.net)
 [![Laravel 13](https://img.shields.io/badge/Laravel-13-red.svg)](https://laravel.com)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B-336791.svg)](https://postgresql.org)
 [![MCP Standard](https://img.shields.io/badge/MCP-Streamable%20HTTP-06b6d4.svg)](https://modelcontextprotocol.io)
 [![OpenAI Plugin Standard](https://img.shields.io/badge/OpenAI%20Plugins-1.0.0-10a37f.svg)](https://agent-plugins.org)
 
@@ -13,6 +14,7 @@ The platform integrates natively with **ChatGPT** and **Codex** via a remote **M
 
 ## Features
 
+- **Multi-Database Support**: Native support for **PostgreSQL 14+** (Neon, Supabase, Render, Railway, AWS RDS), **MySQL 8** (cPanel shared hosting), and **SQLite** (local development & testing). See [POSTGRESQL_SETUP.md](file:///c:/project/microtoolmcp/POSTGRESQL_SETUP.md).
 - **AI Code Studio**: 3-panel developer workspace with file tree, real-time code editor, keyboard shortcuts (`Ctrl+S`), autosave indicators, and instant live sandboxed previews.
 - **Remote MCP Server (`POST /mcp`)**: Streamable HTTP JSON-RPC 2.0 server exposing 24 tools with strict schemas, decoupled data/render pattern, and mandatory safety annotations.
 - **MCP Apps In-Chat Interactive UI**: Renders live, functional micro-tools directly in ChatGPT conversation streams via `render_microtool_widget` (`ui://microtool/preview.html`).
