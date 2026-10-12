@@ -24,7 +24,8 @@
           "Create and edit web micro-tools",
           "Interactive in-chat preview widgets",
           "Automated code validation and snapshots",
-          "Community publishing and forking"
+          "Community publishing and forking",
+          "Admin tool review & code safety auditing"
         ],
         "websiteURL": "https://microtool-hub.getvoroa.com",
         "privacyPolicyURL": "https://microtool-hub.getvoroa.com/privacy",

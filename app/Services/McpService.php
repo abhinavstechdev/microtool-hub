@@ -486,6 +486,7 @@ class McpService
             ],
             [
                 'name' => 'list_pending_tools',
+                'title' => 'List Pending Tools',
                 'description' => 'Administrator tool: List all micro-tools submitted by creators awaiting review and approval for the public catalog.',
                 'inputSchema' => [
                     'type' => 'object',
@@ -503,6 +504,7 @@ class McpService
             ],
             [
                 'name' => 'audit_tool_code',
+                'title' => 'Audit Tool Code',
                 'description' => 'Administrator tool: Retrieve full source code (HTML, CSS, JS) and security analysis to verify client-side isolation and safety.',
                 'inputSchema' => [
                     'type' => 'object',
@@ -521,6 +523,7 @@ class McpService
             ],
             [
                 'name' => 'approve_tool',
+                'title' => 'Approve Tool',
                 'description' => 'Administrator tool: Approve a pending micro-tool and publish it live to the public community catalog.',
                 'inputSchema' => [
                     'type' => 'object',
@@ -540,6 +543,7 @@ class McpService
             ],
             [
                 'name' => 'reject_tool',
+                'title' => 'Reject Tool',
                 'description' => 'Administrator tool: Reject a tool submitted for publication, providing constructive feedback for the creator.',
                 'inputSchema' => [
                     'type' => 'object',

@@ -22,7 +22,8 @@
               "projects:read",
               "files:write",
               "files:delete",
-              "projects:publish"
+              "projects:publish",
+              "admin:moderate"
             ]
           }
         }
