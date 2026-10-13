@@ -61,6 +61,7 @@ Route::get('/mcp/', [McpController::class, 'sse']);
 */
 Route::get('/', [PublicController::class, 'home'])->name('home');
 Route::get('/explore', [PublicController::class, 'explore'])->name('explore');
+Route::get('/api/tools/quick-search', [PublicController::class, 'quickSearch'])->name('api.tools.quick_search');
 Route::get('/tools/{slug}', [PublicController::class, 'toolDetails'])->name('tools.show');
 Route::get('/preview/{slug}', [PublicController::class, 'preview'])->name('preview.show');
 Route::get('/@{username}', [PublicController::class, 'profile'])->name('profile.show');

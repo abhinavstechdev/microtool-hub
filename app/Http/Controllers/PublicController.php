@@ -6,8 +6,10 @@ use App\Models\Project;
 use App\Models\ToolCategory;
 use App\Models\User;
 use App\Services\ProjectStorageService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Str;
 
 class PublicController extends Controller
 {
@@ -30,6 +32,13 @@ class PublicController extends Controller
             ->limit(6)
             ->get();
 
+        $popularTools = Project::where('status', 'published')
+            ->where('visibility', 'public')
+            ->with(['user', 'category'])
+            ->orderByDesc('views_count')
+            ->limit(6)
+            ->get();
+
         $recentTools = Project::where('status', 'published')
             ->where('visibility', 'public')
             ->with(['user', 'category'])
@@ -47,7 +56,51 @@ class PublicController extends Controller
             'total_forks' => (int) Project::sum('forks_count'),
         ];
 
-        return view('public.home', compact('featuredTools', 'recentTools', 'categories', 'stats'));
+        return view('public.home', compact('featuredTools', 'popularTools', 'recentTools', 'categories', 'stats'));
+    }
+
+    /**
+     * Quick search API for live homepage autocomplete
+     */
+    public function quickSearch(Request $request): JsonResponse
+    {
+        $query = trim((string) $request->query('q', ''));
+
+        $toolsQuery = Project::where('status', 'published')
+            ->where('visibility', 'public')
+            ->with(['category']);
+
+        if ($query !== '') {
+            $toolsQuery->where(function ($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                  ->orWhere('description', 'like', "%{$query}%")
+                  ->orWhereHas('category', function ($cat) use ($query) {
+                      $cat->where('name', 'like', "%{$query}%")
+                          ->orWhere('slug', 'like', "%{$query}%");
+                  });
+            });
+        }
+
+        $results = $toolsQuery->orderByDesc('views_count')
+            ->limit(6)
+            ->get()
+            ->map(function ($tool) {
+                return [
+                    'id' => $tool->id,
+                    'name' => $tool->name,
+                    'slug' => $tool->slug,
+                    'url' => route('tools.show', $tool->slug),
+                    'category' => $tool->category ? $tool->category->name : 'Utility',
+                    'category_icon' => $tool->category ? ($tool->category->icon ?? 'bi-cpu') : 'bi-cpu',
+                    'description' => Str::limit($tool->description, 80),
+                ];
+            });
+
+        return response()->json([
+            'query' => $query,
+            'count' => $results->count(),
+            'tools' => $results,
+        ]);
     }
 
     /**

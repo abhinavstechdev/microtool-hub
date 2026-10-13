@@ -48,12 +48,12 @@
 
       <!-- Mobile Toggler -->
       <button class="navbar-toggler border-0 p-2 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar" aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
-        <i class="bi bi-list fs-3 text-secondary"></i>
+        <i class="bi bi-list fs-2 text-secondary"></i>
       </button>
 
-      <!-- Nav Links -->
+      <!-- Nav Links & Controls -->
       <div class="collapse navbar-collapse" id="mainNavbar">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4 gap-lg-1">
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3 gap-lg-1">
           <li class="nav-item">
             <a class="nav-link-custom {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">
               <i class="bi bi-house-door"></i> Home
@@ -76,18 +76,25 @@
           </li>
         </ul>
 
-        <!-- Search Bar (Desktop & Tablet) -->
-        <form class="d-none d-md-flex me-lg-3 my-2 my-lg-0" action="{{ route('explore') }}" method="GET" style="max-width: 240px;">
-          <div class="input-group input-group-sm">
-            <span class="input-group-text bg-transparent border-end-0 border-secondary-subtle">
-              <i class="bi bi-search text-muted small"></i>
-            </span>
-            <input class="form-control bg-transparent border-start-0 border-secondary-subtle text-body shadow-none" type="search" name="q" placeholder="Find a tool..." value="{{ request('q') }}" aria-label="Search">
+        <!-- Mobile Quick Search (< 992px) -->
+        <form class="d-lg-none mb-3" action="{{ route('explore') }}" method="GET">
+          <div class="nav-search-box w-100">
+            <i class="bi bi-search nav-search-icon"></i>
+            <input class="nav-search-input" type="search" name="q" placeholder="Find a micro-tool..." value="{{ request('q') }}" aria-label="Search tools">
           </div>
         </form>
 
-        <!-- Right Side: Theme Toggle & Authentication -->
-        <div class="d-flex align-items-center gap-2 pt-2 pt-lg-0">
+        <!-- Search Bar (Desktop >= 992px) -->
+        <form class="d-none d-lg-flex me-3 my-0" action="{{ route('explore') }}" method="GET">
+          <div class="nav-search-box" id="navSearchBox">
+            <i class="bi bi-search nav-search-icon"></i>
+            <input class="nav-search-input" id="navSearchInput" type="search" name="q" placeholder="Find a tool..." value="{{ request('q') }}" aria-label="Search" autocomplete="off">
+            <kbd class="nav-search-kbd d-none d-xl-inline-block" title="Press / to focus">/</kbd>
+          </div>
+        </form>
+
+        <!-- Right Side: Theme Toggle & Controls (Aligned 36px) -->
+        <div class="d-flex align-items-center gap-2 pt-2 pt-lg-0 flex-wrap flex-lg-nowrap">
           <!-- Theme Toggle Button -->
           <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme (Dark / Light)" aria-label="Switch Theme">
             <i class="bi bi-sun-fill" id="themeIcon"></i>
@@ -98,7 +105,7 @@
               @php
                 $pendingQueueCount = \App\Models\Project::where('status', 'pending_approval')->count();
               @endphp
-              <a href="{{ route('admin.moderation') }}" class="btn-outline-violet d-inline-flex align-items-center gap-1 text-decoration-none py-1 px-3 small" style="border-color: #8b5cf6; color: #a78bfa;">
+              <a href="{{ route('admin.moderation') }}" class="btn-outline-violet nav-action-btn" style="border-color: #8b5cf6; color: #a78bfa;">
                 <i class="bi bi-shield-check"></i>
                 <span class="d-none d-sm-inline">Moderation</span>
                 @if($pendingQueueCount > 0)
@@ -106,11 +113,12 @@
                 @endif
               </a>
             @endif
-            <a href="{{ route('dashboard.index') }}" class="btn-secondary-custom d-inline-flex align-items-center gap-1 text-decoration-none py-1 px-3 small">
-              <i class="bi bi-speedometer2"></i> Dashboard
+            <a href="{{ route('dashboard.index') }}" class="btn-secondary-custom nav-action-btn">
+              <i class="bi bi-speedometer2"></i>
+              <span>Dashboard</span>
             </a>
             <div class="dropdown">
-              <button class="btn-secondary-custom dropdown-toggle d-flex align-items-center gap-2 py-1 px-3 small" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+              <button class="btn-secondary-custom nav-action-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
                 <i class="bi bi-person-circle"></i>
                 <span class="d-none d-sm-inline">{{ auth()->user()->name }}</span>
                 @if(auth()->user()->role === 'admin')
@@ -142,8 +150,8 @@
               </ul>
             </div>
           @else
-            <a href="{{ route('login') }}" class="btn-secondary-custom text-decoration-none py-1 px-3 small">Sign In</a>
-            <a href="{{ route('register') }}" class="btn-violet text-decoration-none py-1 px-3 small">Get Started</a>
+            <a href="{{ route('login') }}" class="btn-secondary-custom nav-action-btn">Sign In</a>
+            <a href="{{ route('register') }}" class="btn-violet nav-action-btn">Get Started</a>
           @endauth
         </div>
       </div>
