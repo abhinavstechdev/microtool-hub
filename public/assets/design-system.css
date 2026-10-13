@@ -161,14 +161,15 @@ a:hover {
 .nav-link-custom {
   color: var(--text-muted);
   font-weight: 550;
-  font-size: 0.92rem;
-  padding: 6px 14px;
+  font-size: 0.88rem;
+  padding: 5px 10px;
   border-radius: var(--radius-sm);
   transition: var(--transition-smooth);
   text-decoration: none;
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  white-space: nowrap;
 }
 .nav-link-custom:hover, .nav-link-custom.active {
   color: var(--text-main);
@@ -642,3 +643,474 @@ a:hover {
   border-color: var(--border-subtle);
   border-radius: var(--radius-lg);
 }
+
+/* -------------------------------------------------------------
+ * MicroToolHub Studio — VS Code-Inspired Web IDE Architecture
+ * ------------------------------------------------------------- */
+body.studio-body {
+  height: 100vh;
+  max-height: 100vh;
+  overflow: hidden !important;
+}
+
+body.studio-body .site-navbar {
+  padding-top: 4px;
+  padding-bottom: 4px;
+  min-height: 46px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+/* Studio Root Layout */
+.studio-root {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 46px);
+  width: 100%;
+  overflow: hidden;
+  background: var(--bg-base);
+}
+
+/* Studio Project Toolbar */
+.studio-toolbar {
+  height: 44px;
+  min-height: 44px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 14px;
+  gap: 12px;
+  z-index: 25;
+}
+
+/* Studio Unified Buttons */
+.studio-btn {
+  height: 30px;
+  padding: 0 10px;
+  font-size: 0.82rem;
+  font-weight: 550;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+  text-decoration: none;
+  white-space: nowrap;
+}
+.studio-btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+  border-color: transparent;
+}
+.studio-btn-ghost:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-main);
+}
+.studio-btn-primary {
+  background: var(--violet-500);
+  color: #ffffff !important;
+  box-shadow: 0 2px 10px rgba(139, 92, 246, 0.35);
+}
+.studio-btn-primary:hover {
+  background: var(--violet-600);
+  color: #ffffff !important;
+}
+.studio-btn-secondary {
+  background: var(--bg-card);
+  color: var(--text-main);
+  border-color: var(--border-subtle);
+}
+.studio-btn-secondary:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--violet-border);
+  color: var(--violet-500);
+}
+.studio-btn-success {
+  background: rgba(22, 163, 74, 0.15);
+  color: #22c55e !important;
+  border-color: rgba(34, 197, 94, 0.35);
+}
+.studio-btn-success:hover {
+  background: #16a34a;
+  color: #ffffff !important;
+}
+.studio-btn-warning {
+  background: rgba(245, 158, 11, 0.15);
+  color: #f59e0b !important;
+  border-color: rgba(245, 158, 11, 0.35);
+}
+.studio-btn-warning:hover {
+  background: #d97706;
+  color: #ffffff !important;
+}
+.studio-btn-danger {
+  background: rgba(220, 38, 38, 0.15);
+  color: #ef4444 !important;
+  border-color: rgba(239, 68, 68, 0.35);
+}
+.studio-btn-danger:hover {
+  background: #dc2626;
+  color: #ffffff !important;
+}
+.studio-kbd {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+}
+
+/* Studio Workspace Container */
+.studio-workspace {
+  display: flex;
+  flex: 1;
+  height: calc(100% - 44px);
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Sidebar: File Explorer & Snapshots */
+.studio-sidebar {
+  width: 230px;
+  min-width: 170px;
+  max-width: 420px;
+  height: 100%;
+  background: var(--bg-secondary);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+  user-select: none;
+}
+.studio-sidebar.collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  border-right: none;
+  visibility: hidden;
+}
+
+/* Sidebar File Items */
+.file-tree-item {
+  cursor: pointer;
+  border-radius: 6px;
+  padding: 5px 8px;
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--text-muted);
+  transition: var(--transition-smooth);
+  margin-bottom: 2px;
+}
+.file-tree-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-main);
+}
+.file-tree-item.active {
+  background: var(--violet-soft);
+  color: var(--violet-500);
+  font-weight: 600;
+  border-left: 2px solid var(--violet-500);
+  border-radius: 0 6px 6px 0;
+}
+
+/* Draggable Splitter */
+.studio-resizer {
+  width: 5px;
+  height: 100%;
+  cursor: col-resize;
+  background: transparent;
+  position: relative;
+  flex-shrink: 0;
+  z-index: 20;
+  transition: background 0.15s;
+}
+.studio-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  width: 1px;
+  background: var(--border-subtle);
+}
+.studio-resizer:hover, .studio-resizer.is-dragging {
+  background: var(--violet-500) !important;
+}
+.studio-resizer:hover::after, .studio-resizer.is-dragging::after {
+  background: transparent;
+}
+
+/* Center Editor Panel */
+.studio-editor-panel {
+  flex: 1;
+  min-width: 240px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-base);
+  overflow: hidden;
+}
+
+/* Editor Tab Bar */
+.studio-editor-tabbar {
+  height: 36px;
+  min-height: 36px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+}
+.studio-tab-active {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 550;
+  color: var(--text-main);
+  background: var(--bg-base);
+  border: 1px solid var(--border-subtle);
+  border-bottom-color: var(--bg-base);
+  border-radius: 6px 6px 0 0;
+}
+.studio-editor-tool {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 26px;
+  height: 26px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+.studio-editor-tool:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-main);
+}
+.studio-editor-tool.active {
+  color: var(--violet-500);
+  background: var(--violet-soft);
+}
+
+/* Editor Canvas */
+.studio-editor-canvas {
+  flex: 1;
+  min-height: 0;
+  position: relative;
+  overflow: hidden;
+  background: #090e17;
+}
+
+/* CodeMirror 5 Overrides for Sleek IDE */
+.CodeMirror {
+  height: 100% !important;
+  font-family: var(--font-mono) !important;
+  font-size: 13px !important;
+  line-height: 1.6 !important;
+  background: #090e17 !important;
+  color: #f1f5f9 !important;
+}
+[data-bs-theme="light"] .CodeMirror {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+.CodeMirror-gutters {
+  background: #0d1424 !important;
+  border-right: 1px solid var(--border-subtle) !important;
+}
+[data-bs-theme="light"] .CodeMirror-gutters {
+  background: #f8fafc !important;
+  border-right: 1px solid #e2e8f0 !important;
+}
+.CodeMirror-linenumber {
+  color: #475569 !important;
+  padding: 0 8px 0 6px !important;
+}
+[data-bs-theme="light"] .CodeMirror-linenumber {
+  color: #94a3b8 !important;
+}
+.CodeMirror-cursor {
+  border-left: 2px solid var(--violet-500) !important;
+}
+.CodeMirror-selected {
+  background: rgba(139, 92, 246, 0.28) !important;
+}
+.CodeMirror-focused .CodeMirror-selected {
+  background: rgba(139, 92, 246, 0.35) !important;
+}
+.CodeMirror-line {
+  padding: 0 8px !important;
+}
+.CodeMirror-activeline-background {
+  background: rgba(255, 255, 255, 0.03) !important;
+}
+
+/* Fallback Textarea Editor */
+.editor-textarea-fallback {
+  width: 100%;
+  height: 100%;
+  background: #090e17;
+  color: #e2e8f0;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: 12px 14px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  tab-size: 2;
+  white-space: pre;
+  overflow: auto;
+}
+
+/* Editor Status Bar */
+.studio-statusbar {
+  height: 24px;
+  min-height: 24px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 12px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+/* Right Panel: Live Preview & MCP Activity */
+.studio-preview-panel {
+  width: 450px;
+  min-width: 280px;
+  max-width: 780px;
+  height: 100%;
+  background: var(--bg-secondary);
+  border-left: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.studio-preview-panel.collapsed {
+  width: 0 !important;
+  min-width: 0 !important;
+  border-left: none;
+  visibility: hidden;
+}
+
+/* Fullscreen Mode for Preview */
+.studio-preview-panel.is-fullscreen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  z-index: 1100;
+  border: none;
+}
+
+/* Preview Header */
+.studio-preview-header {
+  height: 36px;
+  min-height: 36px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 10px;
+}
+
+/* Preview Stage Container */
+.studio-preview-stage {
+  flex: 1;
+  min-height: 0;
+  background: #060a12;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+  overflow: auto;
+  position: relative;
+}
+[data-bs-theme="light"] .studio-preview-stage {
+  background: #f1f5f9;
+}
+.studio-preview-stage iframe {
+  background: #ffffff;
+  border: none;
+  height: 100%;
+  transition: width 0.15s ease;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+/* Mobile Studio View Tabs (<768px) */
+.studio-mobile-nav {
+  display: none;
+  height: 40px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+@media (max-width: 767.98px) {
+  .studio-mobile-nav {
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 8px;
+  }
+  .studio-mobile-btn {
+    flex: 1;
+    height: 32px;
+    background: transparent;
+    border: none;
+    font-size: 0.8rem;
+    font-weight: 550;
+    color: var(--text-muted);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+  }
+  .studio-mobile-btn.active {
+    background: var(--violet-soft);
+    color: var(--violet-500);
+    font-weight: 650;
+  }
+  .studio-workspace {
+    flex-direction: column;
+    height: calc(100% - 84px);
+  }
+  .studio-sidebar, .studio-editor-panel, .studio-preview-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    display: none !important;
+    border: none !important;
+  }
+  .studio-sidebar.mobile-active,
+  .studio-editor-panel.mobile-active,
+  .studio-preview-panel.mobile-active {
+    display: flex !important;
+  }
+  .studio-resizer {
+    display: none !important;
+  }
+}
+

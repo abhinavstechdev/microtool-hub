@@ -30,12 +30,11 @@
   <link rel="stylesheet" href="{{ asset('assets/design-system.css') }}?v=2026.1">
 
   @stack('styles')
-</head>
-<body>
+<body class="@yield('body_class')">
 
   <!-- Navigation Bar -->
   <nav class="site-navbar navbar navbar-expand-lg sticky-top">
-    <div class="container">
+    <div class="@yield('navbar_container_class', 'container')">
       <!-- Brand Logo -->
       <a class="brand-badge" href="{{ route('home') }}">
         <div class="brand-icon">
@@ -152,6 +151,7 @@
   </nav>
 
   <!-- Flash Messages -->
+  @if(!View::hasSection('hide_flash'))
   <div class="container mt-3">
     @if(session('success'))
       <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 rounded-3 border-0 shadow-sm" role="alert" style="background: var(--color-success-bg); color: var(--color-success); border: 1px solid var(--color-success) !important;">
@@ -168,12 +168,14 @@
       </div>
     @endif
   </div>
+  @endif
 
   <!-- Main Content -->
   <main class="flex-grow-1">
     @yield('content')
   </main>
 
+  @if(!View::hasSection('hide_footer'))
   <!-- Professional Footer -->
   <footer class="mt-auto border-top py-5" style="background: var(--footer-bg); border-color: var(--border-subtle) !important;">
     <div class="container">
@@ -244,6 +246,7 @@
       </div>
     </div>
   </footer>
+  @endif
 
   <!-- Bootstrap JS -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>

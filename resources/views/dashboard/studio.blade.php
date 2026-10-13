@@ -1,284 +1,421 @@
 @extends('layouts.app')
 
 @section('title', 'AI Code Studio — ' . $project->name)
+@section('body_class', 'studio-body')
+@section('navbar_container_class', 'container-fluid px-3')
+@section('hide_flash', true)
+@section('hide_footer', true)
 
 @push('styles')
-<style>
-  .studio-layout {
-    display: grid;
-    grid-template-columns: 240px 1fr 480px;
-    height: calc(100vh - 125px);
-    overflow: hidden;
-  }
-  @media (max-width: 1200px) {
-    .studio-layout {
-      grid-template-columns: 200px 1fr 380px;
-    }
-  }
-  @media (max-width: 992px) {
-    .studio-layout {
-      display: flex;
-      flex-direction: column;
-      height: auto;
-      overflow: visible;
-    }
-  }
-  .file-tree-item {
-    cursor: pointer;
-    border-radius: 6px;
-    padding: 6px 10px;
-    font-size: 0.85rem;
-    transition: background 0.15s;
-  }
-  .file-tree-item:hover {
-    background: rgba(255, 255, 255, 0.05);
-  }
-  .file-tree-item.active {
-    background: rgba(6, 182, 212, 0.15);
-    color: var(--mcp-cyan);
-    font-weight: 600;
-  }
-  .editor-textarea {
-    width: 100%;
-    height: 100%;
-    background: #090d16;
-    color: #e2e8f0;
-    border: none;
-    outline: none;
-    resize: none;
-    padding: 16px;
-    font-family: var(--font-mono);
-    font-size: 0.9rem;
-    line-height: 1.6;
-    tab-size: 2;
-  }
-  .editor-textarea:focus {
-    background: #070a12;
-  }
-</style>
+  <!-- CodeMirror 5 Stylesheets for Professional IDE Experience -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/dialog/dialog.min.css">
 @endpush
 
 @section('content')
-<!-- Studio Top Navigation -->
-<div class="bg-body-tertiary border-bottom py-2 px-3 d-flex flex-wrap justify-content-between align-items-center">
-  <div class="d-flex align-items-center gap-3">
-    <a href="{{ route('dashboard.index') }}" class="btn btn-sm btn-outline-secondary" title="Back to Dashboard">
-      <i class="bi bi-chevron-left"></i>
-    </a>
-    <div>
-      <span class="fw-bold me-2">{{ $project->name }}</span>
-      <span class="badge {{ $project->status === 'published' ? 'bg-success-subtle text-success' : 'bg-warning-subtle text-warning' }} small font-mono">
-        {{ $project->status }}
-      </span>
-      <span id="unsavedBadge" class="badge bg-danger small ms-1 d-none">Unsaved</span>
-    </div>
-  </div>
+<div class="studio-root" id="studioRoot">
 
-  <div class="d-flex align-items-center gap-2">
-    <!-- Save Button -->
-    <button id="saveBtn" class="btn btn-sm btn-primary">
-      <i class="bi bi-floppy me-1"></i> Save <span class="d-none d-sm-inline font-mono small text-white-50">(Ctrl+S)</span>
-    </button>
+  <!-- 1. Studio Project Toolbar -->
+  <header class="studio-toolbar">
+    <!-- Left Cluster: Navigation & Project Meta -->
+    <div class="d-flex align-items-center gap-2 text-truncate me-2">
+      <a href="{{ route('dashboard.index') }}" class="studio-btn studio-btn-ghost" title="Back to Projects Dashboard">
+        <i class="bi bi-chevron-left"></i>
+        <span class="d-none d-sm-inline">Projects</span>
+      </a>
 
-    <!-- Snapshot Button -->
-    <button class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#snapshotModal">
-      <i class="bi bi-camera me-1"></i> Snapshot
-    </button>
+      <span class="text-secondary opacity-50">&bull;</span>
 
-    <!-- Preview in New Tab -->
-    <a href="{{ route('preview.show', $project->slug) }}" target="_blank" class="btn btn-sm btn-outline-info">
-      <i class="bi bi-play-circle me-1"></i> Open Preview
-    </a>
+      <div class="d-flex align-items-center gap-2 text-truncate">
+        <span class="fw-bold text-body text-truncate" style="max-width: 220px;" title="{{ $project->name }}">
+          {{ $project->name }}
+        </span>
 
-    <!-- Publish Toggle -->
-    <form action="{{ route('dashboard.projects.publish', $project->uuid) }}" method="POST" class="d-inline">
-      @csrf
-      <button type="submit" class="btn btn-sm {{ $project->status === 'published' ? 'btn-outline-warning' : 'btn-success' }}">
-        {{ $project->status === 'published' ? 'Unpublish' : 'Publish Tool' }}
-      </button>
-    </form>
-  </div>
-</div>
+        @if($project->status === 'published')
+          <span class="badge bg-success-subtle text-success border border-success-subtle font-mono small py-1 px-2 d-none d-md-inline-block">
+            <i class="bi bi-check-circle-fill me-1"></i>Published
+          </span>
+        @elseif($project->status === 'pending_approval')
+          <span class="badge bg-warning text-dark font-mono small py-1 px-2 d-none d-md-inline-block">
+            <i class="bi bi-hourglass-split me-1"></i>Under Review
+          </span>
+        @elseif($project->status === 'rejected')
+          <span class="badge bg-danger text-white font-mono small py-1 px-2 d-none d-md-inline-block">
+            <i class="bi bi-x-circle-fill me-1"></i>Rejected
+          </span>
+        @else
+          <span class="badge bg-secondary-subtle text-secondary border font-mono small py-1 px-2 d-none d-md-inline-block">
+            Draft
+          </span>
+        @endif
 
-<!-- Studio 3-Panel Workspace -->
-<div class="studio-layout">
-  <!-- Left Panel: File Explorer & Snapshots -->
-  <div class="border-end bg-body d-flex flex-column" style="overflow-y: auto;">
-    <div class="p-3 border-bottom d-flex justify-content-between align-items-center">
-      <span class="fw-bold small text-uppercase text-muted">Project Files</span>
-      <button class="btn btn-sm btn-outline-info py-0 px-2" data-bs-toggle="modal" data-bs-target="#newFileModal" title="Add File">
-        <i class="bi bi-plus-lg"></i>
-      </button>
-    </div>
+        <span id="unsavedBadge" class="badge bg-warning text-dark font-mono small ms-1 d-none">
+          <i class="bi bi-dot"></i>Unsaved
+        </span>
 
-    <!-- Files List -->
-    <div class="p-2 flex-grow-1" id="fileTreeContainer">
-      @foreach($files as $file)
-        <div class="file-tree-item d-flex justify-content-between align-items-center {{ $activeFile && $activeFile->path === $file->path ? 'active' : '' }}" 
-             data-path="{{ $file->path }}" 
-             onclick="selectFile('{{ $file->path }}')">
-          <div class="d-flex align-items-center gap-2 text-truncate">
-            @if(in_array($file->extension, ['html', 'htm']))
-              <i class="bi bi-filetype-html text-danger"></i>
-            @elseif($file->extension === 'css')
-              <i class="bi bi-filetype-css text-primary"></i>
-            @elseif($file->extension === 'js')
-              <i class="bi bi-filetype-js text-warning"></i>
-            @elseif($file->extension === 'json')
-              <i class="bi bi-filetype-json text-info"></i>
-            @else
-              <i class="bi bi-file-earmark-code text-secondary"></i>
-            @endif
-            <span class="text-truncate">{{ $file->path }}</span>
-          </div>
-          <span class="small text-muted font-mono" style="font-size: 0.75rem;">{{ round($file->size_bytes / 1024, 1) }}k</span>
-        </div>
-      @endforeach
-    </div>
-
-    <!-- Snapshots Mini Panel -->
-    <div class="border-top p-3 bg-body-tertiary">
-      <div class="fw-bold small text-uppercase text-muted mb-2">Snapshots ({{ $project->snapshots->count() }})</div>
-      <div class="small text-muted mb-2">
-        @forelse($project->snapshots->take(3) as $snap)
-          <div class="d-flex justify-content-between py-1 border-bottom font-mono" style="font-size: 0.75rem;">
-            <span class="text-info">{{ $snap->version_tag }}</span>
-            <span>{{ $snap->created_at->format('M d H:i') }}</span>
-          </div>
-        @empty
-          <span style="font-size: 0.75rem;">No snapshots saved yet.</span>
-        @endforelse
+        <span id="saveStatus" class="small text-secondary font-mono ms-1 d-none d-xl-inline">Ready</span>
       </div>
     </div>
-  </div>
 
-  <!-- Center Panel: Code Editor -->
-  <div class="d-flex flex-column border-end bg-body">
-    <!-- Active File Tab Bar -->
-    <div class="bg-body-tertiary border-bottom px-3 py-2 d-flex justify-content-between align-items-center small">
-      <div class="d-flex align-items-center gap-2 font-mono">
-        <i class="bi bi-code-slash text-info"></i>
-        <strong id="activeFileName">{{ $activeFile->path ?? 'No file selected' }}</strong>
-      </div>
-      <div class="d-flex align-items-center gap-2">
-        <span id="saveStatus" class="text-muted small">Ready</span>
-        @if($activeFile)
-          <button id="deleteFileBtn" class="btn btn-sm btn-outline-danger py-0 px-2" title="Delete File" onclick="deleteActiveFile()">
-            <i class="bi bi-trash"></i>
+    <!-- Right Cluster: Primary Actions -->
+    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+      <!-- Save Button -->
+      <button id="saveBtn" class="studio-btn studio-btn-primary" title="Save Active File (Ctrl+S)">
+        <i class="bi bi-floppy2"></i>
+        <span>Save</span>
+        <kbd class="studio-kbd d-none d-sm-inline">Ctrl+S</kbd>
+      </button>
+
+      <!-- Snapshot Button -->
+      <button class="studio-btn studio-btn-secondary" data-bs-toggle="modal" data-bs-target="#snapshotModal" title="Create Version Snapshot Backup">
+        <i class="bi bi-camera"></i>
+        <span class="d-none d-sm-inline">Snapshot</span>
+      </button>
+
+      <!-- Open Preview in New Tab -->
+      <a href="{{ route('preview.show', $project->slug) }}" target="_blank" class="studio-btn studio-btn-secondary" title="Open Preview in New Tab">
+        <i class="bi bi-box-arrow-up-right"></i>
+        <span class="d-none d-md-inline">Preview</span>
+      </a>
+
+      <!-- Publish / Review Submission Toggle -->
+      <form action="{{ route('dashboard.projects.publish', $project->uuid) }}" method="POST" class="d-inline">
+        @csrf
+        @if($project->status === 'published')
+          <button type="submit" class="studio-btn studio-btn-warning" title="Withdraw from Public Catalog">
+            <i class="bi bi-eye-slash"></i>
+            <span class="d-none d-sm-inline">Unpublish</span>
+          </button>
+        @elseif($project->status === 'pending_approval')
+          <button type="submit" class="studio-btn studio-btn-danger" title="Withdraw Submission Back to Draft">
+            <i class="bi bi-x-circle"></i>
+            <span class="d-none d-sm-inline">Cancel Review</span>
+          </button>
+        @else
+          <button type="submit" class="studio-btn studio-btn-success" title="{{ auth()->user()->role === 'admin' ? 'Publish Immediately to Public Catalog' : 'Submit for Admin Approval' }}">
+            <i class="bi bi-send-check"></i>
+            <span>{{ auth()->user()->role === 'admin' ? 'Publish' : 'Submit Tool' }}</span>
           </button>
         @endif
-      </div>
+      </form>
     </div>
+  </header>
 
-    <!-- Real-time Textarea Editor -->
-    <div class="flex-grow-1 position-relative">
-      <textarea id="codeEditor" class="editor-textarea" spellcheck="false">{{ $activeContent }}</textarea>
-    </div>
-  </div>
+  <!-- 2. Mobile Tab Switcher (< 768px) -->
+  <nav class="studio-mobile-nav" id="studioMobileNav">
+    <button class="studio-mobile-btn active" data-tab="editor" onclick="switchMobileTab('editor')">
+      <i class="bi bi-code-slash"></i> Editor
+    </button>
+    <button class="studio-mobile-btn" data-tab="files" onclick="switchMobileTab('files')">
+      <i class="bi bi-folder2-open"></i> Files (<span id="mobileFileCount">{{ $files->count() }}</span>)
+    </button>
+    <button class="studio-mobile-btn" data-tab="preview" onclick="switchMobileTab('preview')">
+      <i class="bi bi-play-circle"></i> Preview
+    </button>
+    <button class="studio-mobile-btn" data-tab="mcp" onclick="switchMobileTab('mcp')">
+      <i class="bi bi-cpu"></i> MCP Log
+    </button>
+  </nav>
 
-  <!-- Right Panel: Live Preview & Activity Logs -->
-  <div class="d-flex flex-column bg-body">
-    <!-- Right Panel Tabs -->
-    <ul class="nav nav-tabs px-3 pt-2 bg-body-tertiary border-bottom" role="tablist">
-      <li class="nav-item">
-        <button class="nav-link active small py-1 px-3" data-bs-toggle="tab" data-bs-target="#tabPreview">
-          <i class="bi bi-play-circle me-1"></i> Live Preview
-        </button>
-      </li>
-      <li class="nav-item">
-        <button class="nav-link small py-1 px-3" data-bs-toggle="tab" data-bs-target="#tabAudit">
-          <i class="bi bi-robot me-1"></i> MCP Activity Log
-        </button>
-      </li>
-    </ul>
+  <!-- 3. Studio 3-Panel Workspace -->
+  <div class="studio-workspace" id="studioWorkspace">
 
-    <div class="tab-content flex-grow-1 d-flex flex-column">
-      <!-- Preview Tab -->
-      <div class="tab-pane fade show active flex-grow-1 d-flex flex-column" id="tabPreview">
-        <div class="bg-body-tertiary border-bottom px-3 py-1 d-flex justify-content-between align-items-center small">
-          <div class="btn-group btn-group-sm" role="group">
-            <button type="button" class="btn btn-outline-secondary py-0 active" onclick="setViewport('100%')"><i class="bi bi-display"></i></button>
-            <button type="button" class="btn btn-outline-secondary py-0" onclick="setViewport('768px')"><i class="bi bi-tablet"></i></button>
-            <button type="button" class="btn btn-outline-secondary py-0" onclick="setViewport('375px')"><i class="bi bi-phone"></i></button>
-          </div>
-          <button class="btn btn-sm btn-outline-secondary py-0" onclick="refreshPreview()" title="Reload Preview">
-            <i class="bi bi-arrow-clockwise"></i>
+    <!-- Panel 1: Left Sidebar (Project Files & Snapshots) -->
+    <aside class="studio-sidebar" id="studioSidebar">
+      <!-- Sidebar Header -->
+      <div class="p-2 px-3 border-bottom d-flex justify-content-between align-items-center bg-body-tertiary">
+        <span class="fw-bold small text-uppercase letter-spacing-1 text-secondary" style="font-size: 0.75rem;">
+          <i class="bi bi-folder2-open me-1"></i> Project Files
+        </span>
+        <div class="d-flex align-items-center gap-1">
+          <button class="studio-editor-tool" data-bs-toggle="modal" data-bs-target="#newFileModal" title="Add File">
+            <i class="bi bi-plus-lg"></i>
+          </button>
+          <button id="collapseSidebarBtn" class="studio-editor-tool d-none d-lg-inline-flex" title="Collapse Sidebar">
+            <i class="bi bi-layout-sidebar"></i>
           </button>
         </div>
-        <div class="flex-grow-1 d-flex justify-content-center align-items-stretch" style="background: #0f172a; overflow: auto;">
-          <iframe id="studioPreviewIframe" 
-                  src="{{ route('preview.show', $project->slug) }}" 
-                  class="h-100 border-0" 
-                  style="width: 100%; transition: width 0.2s;"
-                  sandbox="allow-scripts allow-forms allow-modals"></iframe>
-        </div>
       </div>
 
-      <!-- Audit & MCP Tab -->
-      <div class="tab-pane fade flex-grow-1 p-3 font-mono small" id="tabAudit" style="overflow-y: auto;">
-        <h6 class="fw-bold mb-3 font-sans text-muted">MCP Activity & Audit Events</h6>
-        @forelse($auditLogs as $log)
-          <div class="mb-2 pb-2 border-bottom">
-            <div class="d-flex justify-content-between text-muted" style="font-size: 0.75rem;">
-              <span class="text-info">{{ $log->action }}</span>
-              <span>{{ $log->created_at->format('H:i:s') }}</span>
+      <!-- File Tree List -->
+      <div class="p-2 flex-grow-1 overflow-y-auto" id="fileTreeContainer">
+        @foreach($files as $file)
+          <div class="file-tree-item {{ $activeFile && $activeFile->path === $file->path ? 'active' : '' }}" 
+               data-path="{{ $file->path }}" 
+               onclick="selectFile('{{ $file->path }}')"
+               title="{{ $file->path }} ({{ round($file->size_bytes / 1024, 1) }} KB)">
+            <div class="d-flex align-items-center gap-2 text-truncate">
+              @if(in_array($file->extension, ['html', 'htm']))
+                <i class="bi bi-filetype-html fs-6" style="color: #f97316;"></i>
+              @elseif($file->extension === 'css')
+                <i class="bi bi-filetype-css fs-6" style="color: #38bdf8;"></i>
+              @elseif($file->extension === 'js')
+                <i class="bi bi-filetype-js fs-6" style="color: #facc15;"></i>
+              @elseif($file->extension === 'json')
+                <i class="bi bi-filetype-json fs-6" style="color: #4ade80;"></i>
+              @elseif(in_array($file->extension, ['png', 'jpg', 'jpeg', 'svg', 'webp']))
+                <i class="bi bi-file-earmark-image fs-6" style="color: #c084fc;"></i>
+              @else
+                <i class="bi bi-file-earmark-code fs-6 text-secondary"></i>
+              @endif
+              <span class="text-truncate">{{ $file->path }}</span>
             </div>
-            @if($log->payload)
-              <div class="text-muted text-truncate" style="font-size: 0.75rem;">
-                {{ json_encode($log->payload) }}
-              </div>
-            @endif
+            <span class="small text-muted font-mono ms-2 flex-shrink-0" style="font-size: 0.72rem;">
+              {{ round($file->size_bytes / 1024, 1) }}k
+            </span>
           </div>
-        @empty
-          <p class="text-muted">No MCP actions recorded yet. Connect ChatGPT to see live tool invocations.</p>
-        @endforelse
+        @endforeach
+      </div>
+
+      <!-- Snapshots Accordion / Bottom Section -->
+      <div class="border-top p-2 px-3 bg-body-tertiary">
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="fw-bold small text-uppercase letter-spacing-1 text-secondary" style="font-size: 0.72rem;">
+            Snapshots ({{ $project->snapshots->count() }})
+          </span>
+          <button class="btn btn-link p-0 text-secondary small text-decoration-none" data-bs-toggle="modal" data-bs-target="#snapshotModal" title="Take Snapshot">
+            <i class="bi bi-camera"></i>
+          </button>
+        </div>
+        <div class="small text-muted" style="max-height: 90px; overflow-y: auto;">
+          @forelse($project->snapshots->take(4) as $snap)
+            <div class="d-flex justify-content-between py-1 border-bottom border-subtle font-mono" style="font-size: 0.72rem;">
+              <span class="text-truncate" style="max-width: 110px; color: var(--violet-500);" title="{{ $snap->version_tag }} — {{ $snap->label }}">
+                {{ $snap->version_tag }}
+              </span>
+              <span class="text-secondary">{{ $snap->created_at->format('M d H:i') }}</span>
+            </div>
+          @empty
+            <span class="text-secondary" style="font-size: 0.72rem;">No snapshots saved yet.</span>
+          @endforelse
+        </div>
+      </div>
+    </aside>
+
+    <!-- Resizer 1 (Left Sidebar <-> Center Editor) -->
+    <div class="studio-resizer" id="sidebarResizer" title="Drag to resize sidebar (double-click to reset)"></div>
+
+    <!-- Panel 2: Center Code Editor -->
+    <main class="studio-editor-panel mobile-active" id="studioEditorPanel">
+      <!-- Editor Header & Tabs -->
+      <div class="studio-editor-tabbar">
+        <div class="d-flex align-items-center gap-2">
+          <!-- Collapsed Sidebar Trigger -->
+          <button id="expandSidebarBtn" class="studio-editor-tool d-none" title="Expand Sidebar">
+            <i class="bi bi-layout-sidebar"></i>
+          </button>
+
+          <!-- Active File Tab -->
+          <div class="studio-tab-active" id="activeFileTab">
+            <i class="bi bi-code-slash text-info" id="activeFileIcon"></i>
+            <span id="activeFileName">{{ $activeFile->path ?? 'No file selected' }}</span>
+            <span id="tabDirtyDot" class="d-none" style="color: var(--violet-500);">&bull;</span>
+          </div>
+        </div>
+
+        <!-- Editor Toolbar Tools -->
+        <div class="d-flex align-items-center gap-1">
+          <!-- Toggle Word Wrap -->
+          <button id="toggleWrapBtn" class="studio-editor-tool" title="Toggle Word Wrap (Alt+Z)">
+            <i class="bi bi-text-wrap"></i>
+          </button>
+
+          <!-- Font Size Adjusters -->
+          <button id="fontSizeDecBtn" class="studio-editor-tool" title="Decrease Font Size">
+            <i class="bi bi-dash"></i>
+          </button>
+          <span id="fontSizeDisplay" class="small font-mono text-muted px-1" style="font-size: 0.75rem;">13px</span>
+          <button id="fontSizeIncBtn" class="studio-editor-tool" title="Increase Font Size">
+            <i class="bi bi-plus"></i>
+          </button>
+
+          <span class="text-secondary opacity-50 mx-1">|</span>
+
+          <!-- Delete Active File Button -->
+          @if($activeFile)
+            <button id="deleteFileBtn" class="studio-editor-tool text-danger" title="Delete Active File" onclick="deleteActiveFile()">
+              <i class="bi bi-trash"></i>
+            </button>
+          @endif
+
+          <!-- Expand Preview if Preview is collapsed -->
+          <button id="expandPreviewBtn" class="studio-editor-tool d-none" title="Expand Preview">
+            <i class="bi bi-layout-sidebar-reverse"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Editor Canvas -->
+      <div class="studio-editor-canvas" id="editorCanvas">
+        <textarea id="codeEditor" class="editor-textarea-fallback" spellcheck="false">{{ $activeContent }}</textarea>
+      </div>
+
+      <!-- Editor Status Bar -->
+      <footer class="studio-statusbar">
+        <div class="d-flex align-items-center gap-3">
+          <span id="cursorPos">Ln 1, Col 1</span>
+          <span id="charCount">0 chars</span>
+          <span id="saveStatusMini" class="d-none d-sm-inline">Ready</span>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <span id="langMode">HTML</span>
+          <span class="d-none d-sm-inline">UTF-8</span>
+          <span>Spaces: 2</span>
+        </div>
+      </footer>
+    </main>
+
+    <!-- Resizer 2 (Center Editor <-> Right Preview) -->
+    <div class="studio-resizer" id="previewResizer" title="Drag to resize preview panel (double-click to reset)"></div>
+
+    <!-- Panel 3: Right Panel (Live Preview & MCP Activity) -->
+    <aside class="studio-preview-panel" id="studioPreviewPanel">
+      <!-- Right Panel Tab Header -->
+      <div class="studio-preview-header">
+        <!-- View Tabs: Preview / Activity -->
+        <ul class="nav nav-pills gap-1" role="tablist">
+          <li class="nav-item">
+            <button class="studio-btn studio-btn-ghost active py-0 px-2" data-bs-toggle="tab" data-bs-target="#tabPreview" id="previewTabBtn">
+              <i class="bi bi-play-circle me-1"></i> Preview
+            </button>
+          </li>
+          <li class="nav-item">
+            <button class="studio-btn studio-btn-ghost py-0 px-2" data-bs-toggle="tab" data-bs-target="#tabAudit" id="auditTabBtn">
+              <i class="bi bi-cpu me-1"></i> Activity ({{ $auditLogs->count() }})
+            </button>
+          </li>
+        </ul>
+
+        <!-- Right Side Preview Controls -->
+        <div class="d-flex align-items-center gap-1">
+          <!-- Device Viewport Switcher -->
+          <div class="btn-group btn-group-sm" role="group" id="viewportControls">
+            <button type="button" class="studio-editor-tool active" onclick="setViewport('100%')" title="Desktop View (100%)">
+              <i class="bi bi-display"></i>
+            </button>
+            <button type="button" class="studio-editor-tool" onclick="setViewport('768px')" title="Tablet View (768px)">
+              <i class="bi bi-tablet"></i>
+            </button>
+            <button type="button" class="studio-editor-tool" onclick="setViewport('375px')" title="Mobile View (375px)">
+              <i class="bi bi-phone"></i>
+            </button>
+          </div>
+
+          <span class="text-secondary opacity-50 mx-1">|</span>
+
+          <!-- Reload Preview -->
+          <button class="studio-editor-tool" id="refreshPreviewBtn" onclick="refreshPreview()" title="Reload Preview">
+            <i class="bi bi-arrow-clockwise"></i>
+          </button>
+
+          <!-- Fullscreen Toggle -->
+          <button class="studio-editor-tool" id="fullscreenPreviewBtn" onclick="toggleFullscreenPreview()" title="Toggle Fullscreen Preview">
+            <i class="bi bi-arrows-fullscreen"></i>
+          </button>
+
+          <!-- Collapse Preview Toggle -->
+          <button id="collapsePreviewBtn" class="studio-editor-tool d-none d-lg-inline-flex" title="Collapse Preview">
+            <i class="bi bi-layout-sidebar-reverse"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- Tab Content Area -->
+      <div class="tab-content flex-grow-1 d-flex flex-column" style="overflow: hidden;">
+        <!-- Tab 1: Live Preview Stage -->
+        <div class="tab-pane fade show active flex-grow-1 d-flex flex-column h-100" id="tabPreview">
+          <div class="studio-preview-stage" id="previewStage">
+            <iframe id="studioPreviewIframe" 
+                    src="{{ route('preview.show', $project->slug) }}" 
+                    class="h-100" 
+                    style="width: 100%;"
+                    sandbox="allow-scripts allow-forms allow-modals allow-downloads"></iframe>
+          </div>
+        </div>
+
+        <!-- Tab 2: MCP Activity Log -->
+        <div class="tab-pane fade flex-grow-1 p-3 font-mono small h-100" id="tabAudit" style="overflow-y: auto;">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="fw-bold mb-0 text-body font-sans" style="font-size: 0.85rem;">
+              <i class="bi bi-cpu-fill text-info me-1"></i> MCP Activity & Audit Log
+            </h6>
+            <span class="badge bg-body-tertiary border text-secondary font-mono small">{{ $auditLogs->count() }} events</span>
+          </div>
+
+          @forelse($auditLogs as $log)
+            <div class="p-2 mb-2 rounded-2 border border-subtle bg-body-tertiary">
+              <div class="d-flex justify-content-between align-items-center mb-1">
+                <span class="badge font-mono" style="background: var(--violet-soft); color: var(--violet-500); font-size: 0.72rem;">
+                  {{ $log->action }}
+                </span>
+                <span class="text-secondary" style="font-size: 0.7rem;">{{ $log->created_at->format('M d H:i:s') }}</span>
+              </div>
+              @if($log->payload)
+                <pre class="mb-0 text-secondary small p-1 rounded bg-black-50 overflow-x-auto font-mono" style="font-size: 0.7rem; max-height: 80px;">{{ json_encode($log->payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) }}</pre>
+              @endif
+            </div>
+          @empty
+            <div class="text-center py-5">
+              <i class="bi bi-robot fs-2 text-secondary d-block mb-2"></i>
+              <p class="text-muted small mb-0">No MCP tool invocations recorded yet.</p>
+              <span class="text-secondary small">Instruct ChatGPT via Model Context Protocol to see actions live.</span>
+            </div>
+          @endforelse
+        </div>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- Modal 1: Create New File -->
+<div class="modal fade" id="newFileModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bento-card border-0 p-0 overflow-hidden shadow-lg">
+      <div class="modal-header border-bottom py-3 px-4" style="border-color: var(--border-subtle) !important;">
+        <h5 class="modal-title h6 fw-bold mb-0 text-body">
+          <i class="bi bi-file-earmark-plus me-1 text-info"></i> Create New File
+        </h5>
+        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body p-4">
+        <label class="form-label small fw-semibold text-body">Relative File Path</label>
+        <input type="text" id="newFilePathInput" class="form-control font-mono shadow-none" placeholder="e.g. helpers.js, style.css, modal.html">
+        <div class="form-text small mt-2">
+          Supported extensions: <code>.html</code>, <code>.css</code>, <code>.js</code>, <code>.json</code>, <code>.svg</code>, <code>.md</code>, <code>.txt</code>
+        </div>
+      </div>
+      <div class="modal-footer border-top py-2 px-4" style="border-color: var(--border-subtle) !important;">
+        <button type="button" class="studio-btn studio-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="studio-btn studio-btn-primary" onclick="createNewFile()">Create File</button>
       </div>
     </div>
   </div>
 </div>
 
-<!-- New File Modal -->
-<div class="modal fade" id="newFileModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Create New File</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+<!-- Modal 2: Create Snapshot -->
+<div class="modal fade" id="snapshotModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bento-card border-0 p-0 overflow-hidden shadow-lg">
+      <div class="modal-header border-bottom py-3 px-4" style="border-color: var(--border-subtle) !important;">
+        <h5 class="modal-title h6 fw-bold mb-0 text-body">
+          <i class="bi bi-camera me-1 text-info"></i> Create Version Snapshot
+        </h5>
+        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
       </div>
-      <div class="modal-body">
-        <label class="form-label small fw-semibold">Relative Path</label>
-        <input type="text" id="newFilePathInput" class="form-control font-mono" placeholder="e.g. helpers.js or css/theme.css">
-        <div class="form-text small">Allowed: .html, .css, .js, .json, .svg, .png, .md, .txt</div>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" onclick="createNewFile()">Create File</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Snapshot Modal -->
-<div class="modal fade" id="snapshotModal" tabindex="-1">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title">Create Project Snapshot</h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-      </div>
-      <div class="modal-body">
+      <div class="modal-body p-4">
         <div class="mb-3">
-          <label class="form-label small fw-semibold">Version Tag</label>
-          <input type="text" id="snapTagInput" class="form-control font-mono" value="v1.0.{{ $project->snapshots->count() + 1 }}">
+          <label class="form-label small fw-semibold text-body">Version Tag</label>
+          <input type="text" id="snapTagInput" class="form-control font-mono shadow-none" value="v1.0.{{ $project->snapshots->count() + 1 }}">
         </div>
         <div class="mb-3">
-          <label class="form-label small fw-semibold">Label / Note</label>
-          <input type="text" id="snapLabelInput" class="form-control" placeholder="e.g. Added dark mode toggle">
+          <label class="form-label small fw-semibold text-body">Snapshot Description / Label</label>
+          <input type="text" id="snapLabelInput" class="form-control shadow-none" placeholder="e.g. Added responsive layout & copy button">
         </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-        <button type="button" class="btn btn-primary" onclick="createSnapshot()">Create Snapshot</button>
+      <div class="modal-footer border-top py-2 px-4" style="border-color: var(--border-subtle) !important;">
+        <button type="button" class="studio-btn studio-btn-ghost" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="studio-btn studio-btn-primary" onclick="createSnapshot()">Save Snapshot</button>
       </div>
     </div>
   </div>
@@ -286,43 +423,188 @@
 @endsection
 
 @push('scripts')
+<!-- CodeMirror Core and Syntax Modes -->
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/lib/codemirror.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/xml/xml.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/javascript/javascript.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/css/css.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/htmlmixed/htmlmixed.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/mode/markdown/markdown.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closetag.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/edit/closebrackets.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/codemirror@5.65.16/addon/selection/active-line.min.js"></script>
+
 <script>
+(function() {
   let currentFile = '{{ $activeFile->path ?? "" }}';
   let isDirty = false;
+  let cmEditor = null;
+  let currentFontSize = 13;
+  let isWordWrap = false;
   const projectUuid = '{{ $project->uuid }}';
-  const editor = document.getElementById('codeEditor');
-  const unsavedBadge = document.getElementById('unsavedBadge');
-  const saveStatus = document.getElementById('saveStatus');
 
-  // Handle Tab indentation
-  editor.addEventListener('keydown', (e) => {
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      const start = editor.selectionStart;
-      const end = editor.selectionEnd;
-      editor.value = editor.value.substring(0, start) + "  " + editor.value.substring(end);
-      editor.selectionStart = editor.selectionEnd = start + 2;
-      triggerDirty();
+  const rawTextarea = document.getElementById('codeEditor');
+  const unsavedBadge = document.getElementById('unsavedBadge');
+  const tabDirtyDot = document.getElementById('tabDirtyDot');
+  const saveStatus = document.getElementById('saveStatus');
+  const saveStatusMini = document.getElementById('saveStatusMini');
+  const cursorPosEl = document.getElementById('cursorPos');
+  const charCountEl = document.getElementById('charCount');
+  const langModeEl = document.getElementById('langMode');
+  const fontSizeDisplay = document.getElementById('fontSizeDisplay');
+
+  // Detect mode based on filename
+  function getModeForPath(path) {
+    const ext = path.split('.').pop().toLowerCase();
+    switch (ext) {
+      case 'html':
+      case 'htm':
+        return 'htmlmixed';
+      case 'js':
+        return 'javascript';
+      case 'json':
+        return { name: 'javascript', json: true };
+      case 'css':
+        return 'css';
+      case 'md':
+        return 'markdown';
+      default:
+        return 'text/plain';
     }
-    // Ctrl+S / Cmd+S
+  }
+
+  function getLangLabel(path) {
+    const ext = path.split('.').pop().toLowerCase();
+    switch (ext) {
+      case 'html': return 'HTML (Mixed)';
+      case 'js': return 'JavaScript';
+      case 'json': return 'JSON';
+      case 'css': return 'CSS';
+      case 'md': return 'Markdown';
+      default: return 'Text';
+    }
+  }
+
+  // Initialize CodeMirror 5 with Fallback
+  try {
+    if (typeof CodeMirror !== 'undefined') {
+      cmEditor = CodeMirror.fromTextArea(rawTextarea, {
+        lineNumbers: true,
+        mode: getModeForPath(currentFile),
+        theme: 'default',
+        tabSize: 2,
+        indentUnit: 2,
+        indentWithTabs: false,
+        lineWrapping: false,
+        autoCloseTags: true,
+        autoCloseBrackets: true,
+        styleActiveLine: true,
+        viewportMargin: 50,
+      });
+
+      // Update Cursor Position & Stats
+      cmEditor.on('cursorActivity', () => {
+        const pos = cmEditor.getCursor();
+        cursorPosEl.textContent = `Ln ${pos.line + 1}, Col ${pos.ch + 1}`;
+      });
+
+      // Detect Changes
+      cmEditor.on('change', () => {
+        triggerDirty();
+        charCountEl.textContent = `${cmEditor.getValue().length} chars`;
+      });
+
+      // Hotkey: Ctrl+S / Cmd+S
+      cmEditor.setOption('extraKeys', {
+        'Ctrl-S': function() { saveCurrentFile(); },
+        'Cmd-S': function() { saveCurrentFile(); },
+        'Tab': function(cm) {
+          if (cm.somethingSelected()) {
+            cm.indentSelection('add');
+          } else {
+            cm.replaceSelection('  ', 'end');
+          }
+        }
+      });
+
+      // Initial stats
+      charCountEl.textContent = `${cmEditor.getValue().length} chars`;
+      langModeEl.textContent = getLangLabel(currentFile);
+    }
+  } catch (e) {
+    console.warn('CodeMirror failed to initialize, using enhanced textarea fallback:', e);
+  }
+
+  // Fallback textarea event listeners
+  if (!cmEditor && rawTextarea) {
+    rawTextarea.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = rawTextarea.selectionStart;
+        const end = rawTextarea.selectionEnd;
+        rawTextarea.value = rawTextarea.value.substring(0, start) + "  " + rawTextarea.value.substring(end);
+        rawTextarea.selectionStart = rawTextarea.selectionEnd = start + 2;
+        triggerDirty();
+      }
+      if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+        e.preventDefault();
+        saveCurrentFile();
+      }
+    });
+    rawTextarea.addEventListener('input', () => {
+      triggerDirty();
+      charCountEl.textContent = `${rawTextarea.value.length} chars`;
+    });
+  }
+
+  // Global window keydown for Ctrl+S
+  window.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 's') {
       e.preventDefault();
       saveCurrentFile();
     }
   });
 
-  editor.addEventListener('input', triggerDirty);
-
-  function triggerDirty() {
-    isDirty = true;
-    unsavedBadge.classList.remove('d-none');
-    saveStatus.textContent = 'Unsaved changes';
+  function getEditorContent() {
+    return cmEditor ? cmEditor.getValue() : rawTextarea.value;
   }
 
+  function setEditorContent(content) {
+    if (cmEditor) {
+      cmEditor.setValue(content);
+      cmEditor.clearHistory();
+    } else {
+      rawTextarea.value = content;
+    }
+    charCountEl.textContent = `${content.length} chars`;
+  }
+
+  function triggerDirty() {
+    if (!isDirty) {
+      isDirty = true;
+      unsavedBadge.classList.remove('d-none');
+      tabDirtyDot.classList.remove('d-none');
+      saveStatus.textContent = 'Unsaved changes';
+      saveStatusMini.textContent = 'Unsaved';
+    }
+  }
+
+  function markSaved() {
+    isDirty = false;
+    unsavedBadge.classList.add('d-none');
+    tabDirtyDot.classList.add('d-none');
+    const timeStr = new Date().toLocaleTimeString();
+    saveStatus.textContent = 'Saved at ' + timeStr;
+    saveStatusMini.textContent = 'Saved ' + timeStr;
+  }
+
+  // Save current file via AJAX
   function saveCurrentFile() {
     if (!currentFile) return;
 
     saveStatus.textContent = 'Saving…';
+    saveStatusMini.textContent = 'Saving…';
+
     fetch(`/studio/${projectUuid}/file`, {
       method: 'POST',
       headers: {
@@ -331,33 +613,36 @@
       },
       body: JSON.stringify({
         path: currentFile,
-        content: editor.value
+        content: getEditorContent()
       })
     })
-    .then(r => r.json())
+    .then(r => {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
     .then(data => {
-      isDirty = false;
-      unsavedBadge.classList.add('d-none');
-      saveStatus.textContent = 'Saved at ' + new Date().toLocaleTimeString();
+      markSaved();
       refreshPreview();
     })
     .catch(err => {
       saveStatus.textContent = 'Error saving!';
+      saveStatusMini.textContent = 'Save error';
       alert('Failed to save file: ' + err.message);
     });
   }
-
   document.getElementById('saveBtn').addEventListener('click', saveCurrentFile);
 
-  function selectFile(path) {
+  // File Switching
+  window.selectFile = function(path) {
     if (isDirty) {
-      if (!confirm('You have unsaved changes. Switch file anyway?')) return;
+      if (!confirm('You have unsaved changes in ' + currentFile + '. Switch anyway?')) return;
     }
 
     currentFile = path;
     document.getElementById('activeFileName').textContent = path;
-    
-    // Update active class in sidebar
+    langModeEl.textContent = getLangLabel(path);
+
+    // Update active highlight in sidebar
     document.querySelectorAll('.file-tree-item').forEach(el => {
       el.classList.toggle('active', el.getAttribute('data-path') === path);
     });
@@ -366,25 +651,203 @@
     fetch(`/studio/${projectUuid}/file?path=${encodeURIComponent(path)}`)
       .then(r => r.json())
       .then(data => {
-        editor.value = data.content;
+        setEditorContent(data.content);
+        if (cmEditor) {
+          cmEditor.setOption('mode', getModeForPath(path));
+        }
         isDirty = false;
         unsavedBadge.classList.add('d-none');
+        tabDirtyDot.classList.add('d-none');
         saveStatus.textContent = 'Ready';
+        saveStatusMini.textContent = 'Ready';
+
+        // Auto-switch to editor view on mobile
+        if (window.innerWidth < 768) {
+          switchMobileTab('editor');
+        }
+      })
+      .catch(err => {
+        saveStatus.textContent = 'Load error';
       });
-  }
+  };
 
-  function refreshPreview() {
+  // Preview Reload
+  window.refreshPreview = function() {
     const iframe = document.getElementById('studioPreviewIframe');
+    const refreshBtn = document.getElementById('refreshPreviewBtn');
+    if (refreshBtn) {
+      const icon = refreshBtn.querySelector('i');
+      if (icon) icon.classList.add('spin-icon');
+      setTimeout(() => { if (icon) icon.classList.remove('spin-icon'); }, 600);
+    }
     iframe.src = iframe.src;
-  }
+  };
 
-  function setViewport(width) {
+  // Viewport Switcher
+  window.setViewport = function(width) {
     const iframe = document.getElementById('studioPreviewIframe');
     iframe.style.width = width;
+    document.querySelectorAll('#viewportControls button').forEach(btn => btn.classList.remove('active'));
+    if (event && event.currentTarget) {
+      event.currentTarget.classList.add('active');
+    }
+  };
+
+  // Toggle Fullscreen Preview
+  window.toggleFullscreenPreview = function() {
+    const previewPanel = document.getElementById('studioPreviewPanel');
+    const btn = document.getElementById('fullscreenPreviewBtn');
+    previewPanel.classList.toggle('is-fullscreen');
+    if (previewPanel.classList.contains('is-fullscreen')) {
+      btn.innerHTML = '<i class="bi bi-fullscreen-exit"></i>';
+      btn.title = 'Exit Fullscreen';
+    } else {
+      btn.innerHTML = '<i class="bi bi-arrows-fullscreen"></i>';
+      btn.title = 'Toggle Fullscreen Preview';
+    }
+  };
+
+  // Word Wrap Toggle
+  const toggleWrapBtn = document.getElementById('toggleWrapBtn');
+  if (toggleWrapBtn) {
+    toggleWrapBtn.addEventListener('click', () => {
+      isWordWrap = !isWordWrap;
+      toggleWrapBtn.classList.toggle('active', isWordWrap);
+      if (cmEditor) {
+        cmEditor.setOption('lineWrapping', isWordWrap);
+      } else if (rawTextarea) {
+        rawTextarea.style.whiteSpace = isWordWrap ? 'pre-wrap' : 'pre';
+      }
+    });
   }
 
-  function createNewFile() {
-    const path = document.getElementById('newFilePathInput').value.trim();
+  // Font Size Adjustments
+  const fontSizeIncBtn = document.getElementById('fontSizeIncBtn');
+  const fontSizeDecBtn = document.getElementById('fontSizeDecBtn');
+  function setFontSize(newSize) {
+    currentFontSize = Math.min(22, Math.max(10, newSize));
+    fontSizeDisplay.textContent = currentFontSize + 'px';
+    const cmEl = document.querySelector('.CodeMirror');
+    if (cmEl) {
+      cmEl.style.fontSize = currentFontSize + 'px';
+      if (cmEditor) cmEditor.refresh();
+    }
+    if (rawTextarea) {
+      rawTextarea.style.fontSize = currentFontSize + 'px';
+    }
+  }
+  if (fontSizeIncBtn) fontSizeIncBtn.addEventListener('click', () => setFontSize(currentFontSize + 1));
+  if (fontSizeDecBtn) fontSizeDecBtn.addEventListener('click', () => setFontSize(currentFontSize - 1));
+
+  // Collapsible Sidebar & Preview
+  const sidebar = document.getElementById('studioSidebar');
+  const previewPanel = document.getElementById('studioPreviewPanel');
+  const collapseSidebarBtn = document.getElementById('collapseSidebarBtn');
+  const expandSidebarBtn = document.getElementById('expandSidebarBtn');
+  const collapsePreviewBtn = document.getElementById('collapsePreviewBtn');
+  const expandPreviewBtn = document.getElementById('expandPreviewBtn');
+
+  function toggleSidebar(collapsed) {
+    sidebar.classList.toggle('collapsed', collapsed);
+    expandSidebarBtn.classList.toggle('d-none', !collapsed);
+    if (cmEditor) setTimeout(() => cmEditor.refresh(), 150);
+  }
+
+  function togglePreview(collapsed) {
+    previewPanel.classList.toggle('collapsed', collapsed);
+    expandPreviewBtn.classList.toggle('d-none', !collapsed);
+    if (cmEditor) setTimeout(() => cmEditor.refresh(), 150);
+  }
+
+  if (collapseSidebarBtn) collapseSidebarBtn.addEventListener('click', () => toggleSidebar(true));
+  if (expandSidebarBtn) expandSidebarBtn.addEventListener('click', () => toggleSidebar(false));
+  if (collapsePreviewBtn) collapsePreviewBtn.addEventListener('click', () => togglePreview(true));
+  if (expandPreviewBtn) expandPreviewBtn.addEventListener('click', () => togglePreview(false));
+
+  // Draggable Splitters
+  function setupResizer(resizerEl, targetEl, isLeft, minW, maxW, defaultW) {
+    if (!resizerEl || !targetEl) return;
+    let isDragging = false;
+
+    resizerEl.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      isDragging = true;
+      resizerEl.classList.add('is-dragging');
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+
+      const iframe = document.getElementById('studioPreviewIframe');
+      if (iframe) iframe.style.pointerEvents = 'none';
+
+      function onMouseMove(ev) {
+        if (!isDragging) return;
+        let newWidth;
+        if (isLeft) {
+          newWidth = ev.clientX - targetEl.getBoundingClientRect().left;
+        } else {
+          newWidth = targetEl.getBoundingClientRect().right - ev.clientX;
+        }
+        if (newWidth >= minW && newWidth <= maxW) {
+          targetEl.style.width = newWidth + 'px';
+          if (cmEditor) cmEditor.refresh();
+        }
+      }
+
+      function onMouseUp() {
+        isDragging = false;
+        resizerEl.classList.remove('is-dragging');
+        document.body.style.cursor = '';
+        document.body.style.userSelect = '';
+        if (iframe) iframe.style.pointerEvents = 'auto';
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+        if (cmEditor) cmEditor.refresh();
+      }
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    });
+
+    // Double-click to reset default width
+    resizerEl.addEventListener('dblclick', () => {
+      targetEl.style.width = defaultW + 'px';
+      if (cmEditor) cmEditor.refresh();
+    });
+  }
+
+  setupResizer(document.getElementById('sidebarResizer'), sidebar, true, 170, 420, 230);
+  setupResizer(document.getElementById('previewResizer'), previewPanel, false, 280, 780, 450);
+
+  // Mobile View Switcher (<768px)
+  window.switchMobileTab = function(tabName) {
+    document.querySelectorAll('.studio-mobile-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.tab === tabName);
+    });
+
+    sidebar.classList.remove('mobile-active');
+    document.getElementById('studioEditorPanel').classList.remove('mobile-active');
+    previewPanel.classList.remove('mobile-active');
+
+    if (tabName === 'files') {
+      sidebar.classList.add('mobile-active');
+    } else if (tabName === 'editor') {
+      document.getElementById('studioEditorPanel').classList.add('mobile-active');
+      if (cmEditor) cmEditor.refresh();
+    } else if (tabName === 'preview') {
+      previewPanel.classList.add('mobile-active');
+      const pTab = document.getElementById('previewTabBtn');
+      if (pTab) bootstrap.Tab.getOrCreateInstance(pTab).show();
+    } else if (tabName === 'mcp') {
+      previewPanel.classList.add('mobile-active');
+      const aTab = document.getElementById('auditTabBtn');
+      if (aTab) bootstrap.Tab.getOrCreateInstance(aTab).show();
+    }
+  };
+
+  // Create New File
+  window.createNewFile = function() {
+    const input = document.getElementById('newFilePathInput');
+    const path = input.value.trim();
     if (!path) return;
 
     fetch(`/studio/${projectUuid}/file/create`, {
@@ -395,16 +858,20 @@
       },
       body: JSON.stringify({ path: path, content: '' })
     })
-    .then(r => r.json())
+    .then(r => {
+      if (!r.ok) throw new Error('File already exists or invalid path');
+      return r.json();
+    })
     .then(() => {
       location.reload();
     })
     .catch(err => alert(err.message));
-  }
+  };
 
-  function deleteActiveFile() {
+  // Delete Active File
+  window.deleteActiveFile = function() {
     if (!currentFile) return;
-    if (!confirm(`Delete ${currentFile}? This cannot be undone.`)) return;
+    if (!confirm(`Delete "${currentFile}" permanently? This action cannot be undone.`)) return;
 
     fetch(`/studio/${projectUuid}/file`, {
       method: 'DELETE',
@@ -415,10 +882,12 @@
       body: JSON.stringify({ path: currentFile })
     })
     .then(r => r.json())
-    .then(() => location.reload());
-  }
+    .then(() => location.reload())
+    .catch(err => alert('Failed to delete file: ' + err.message));
+  };
 
-  function createSnapshot() {
+  // Create Snapshot
+  window.createSnapshot = function() {
     const tag = document.getElementById('snapTagInput').value.trim();
     const label = document.getElementById('snapLabelInput').value.trim();
 
@@ -431,7 +900,10 @@
       body: JSON.stringify({ version_tag: tag, label: label })
     })
     .then(r => r.json())
-    .then(() => location.reload());
-  }
+    .then(() => location.reload())
+    .catch(err => alert('Failed to create snapshot: ' + err.message));
+  };
+
+})();
 </script>
 @endpush

@@ -148,15 +148,24 @@ JS;
     }
 
     /**
+     * Resolve project by UUID for owner or administrator
+     */
+    protected function resolveUserOrAdminProject(User $user, string $uuid): Project
+    {
+        $query = Project::where('uuid', $uuid);
+        if ($user->role !== 'admin') {
+            $query->where('user_id', $user->id);
+        }
+        return $query->firstOrFail();
+    }
+
+    /**
      * AI Code Studio
      */
     public function studio(string $uuid)
     {
         $user = Auth::user();
-        $project = Project::where('uuid', $uuid)
-            ->where('user_id', $user->id)
-            ->with(['files', 'snapshots'])
-            ->firstOrFail();
+        $project = $this->resolveUserOrAdminProject($user, $uuid)->load(['files', 'snapshots']);
 
         $categories = ToolCategory::all();
         $files = $project->files()->orderBy('path')->get();
@@ -179,7 +188,7 @@ JS;
     public function getFile(Request $request, string $uuid): JsonResponse
     {
         $user = Auth::user();
-        $project = Project::where('uuid', $uuid)->where('user_id', $user->id)->firstOrFail();
+        $project = $this->resolveUserOrAdminProject($user, $uuid);
         $path = $request->query('path');
 
         $content = $this->storage->readFile($project, $path);
@@ -192,7 +201,7 @@ JS;
     public function saveFile(Request $request, string $uuid): JsonResponse
     {
         $user = Auth::user();
-        $project = Project::where('uuid', $uuid)->where('user_id', $user->id)->firstOrFail();
+        $project = $this->resolveUserOrAdminProject($user, $uuid);
 
         $path = $request->input('path');
         $content = $request->input('content', '');
@@ -220,7 +229,7 @@ JS;
     public function createFile(Request $request, string $uuid): JsonResponse
     {
         $user = Auth::user();
-        $project = Project::where('uuid', $uuid)->where('user_id', $user->id)->firstOrFail();
+        $project = $this->resolveUserOrAdminProject($user, $uuid);
 
         $path = $request->input('path');
         $content = $request->input('content', '');
@@ -235,7 +244,7 @@ JS;
     public function deleteFile(Request $request, string $uuid): JsonResponse
     {
         $user = Auth::user();
-        $project = Project::where('uuid', $uuid)->where('user_id', $user->id)->firstOrFail();
+        $project = $this->resolveUserOrAdminProject($user, $uuid);
 
         $path = $request->input('path');
         $this->storage->deleteFile($project, $path);
@@ -248,7 +257,7 @@ JS;
     public function createSnapshot(Request $request, string $uuid): JsonResponse
     {
         $user = Auth::user();
-        $project = Project::where('uuid', $uuid)->where('user_id', $user->id)->firstOrFail();
+        $project = $this->resolveUserOrAdminProject($user, $uuid);
 
         $tag = $request->input('version_tag', 'v' . date('Ymd.His'));
         $label = $request->input('label', 'Manual snapshot');
@@ -263,7 +272,7 @@ JS;
     public function togglePublish(string $uuid)
     {
         $user = Auth::user();
-        $project = Project::where('uuid', $uuid)->where('user_id', $user->id)->firstOrFail();
+        $project = $this->resolveUserOrAdminProject($user, $uuid);
 
         if ($project->status === 'published' || $project->status === 'pending_approval') {
             $project->update(['status' => 'draft', 'visibility' => 'private']);
