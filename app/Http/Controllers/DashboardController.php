@@ -7,6 +7,7 @@ use App\Models\OAuthAccessToken;
 use App\Models\Project;
 use App\Models\ProjectFile;
 use App\Models\ToolCategory;
+use App\Models\User;
 use App\Services\ProjectStorageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
