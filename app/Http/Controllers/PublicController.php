@@ -71,12 +71,13 @@ class PublicController extends Controller
             ->with(['category']);
 
         if ($query !== '') {
-            $toolsQuery->where(function ($q) use ($query) {
-                $q->where('name', 'like', "%{$query}%")
-                  ->orWhere('description', 'like', "%{$query}%")
-                  ->orWhereHas('category', function ($cat) use ($query) {
-                      $cat->where('name', 'like', "%{$query}%")
-                          ->orWhere('slug', 'like', "%{$query}%");
+            $lower = '%' . strtolower($query) . '%';
+            $toolsQuery->where(function ($q) use ($lower) {
+                $q->whereRaw('LOWER(name) LIKE ?', [$lower])
+                  ->orWhereRaw('LOWER(description) LIKE ?', [$lower])
+                  ->orWhereHas('category', function ($cat) use ($lower) {
+                      $cat->whereRaw('LOWER(name) LIKE ?', [$lower])
+                          ->orWhereRaw('LOWER(slug) LIKE ?', [$lower]);
                   });
             });
         }
@@ -117,9 +118,10 @@ class PublicController extends Controller
             ->with(['user', 'category']);
 
         if ($query) {
-            $toolsQuery->where(function ($q) use ($query) {
-                $q->where('name', 'like', "%{$query}%")
-                  ->orWhere('description', 'like', "%{$query}%");
+            $lower = '%' . strtolower($query) . '%';
+            $toolsQuery->where(function ($q) use ($lower) {
+                $q->whereRaw('LOWER(name) LIKE ?', [$lower])
+                  ->orWhereRaw('LOWER(description) LIKE ?', [$lower]);
             });
         }
 
