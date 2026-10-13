@@ -3,7 +3,7 @@
 @section('title', 'Admin Moderation & AI Security Review — MicroTool Hub')
 
 @section('content')
-<div class="container py-4">
+<div class="moderation-container py-4">
   <!-- Admin Header -->
   <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
     <div>
@@ -17,7 +17,7 @@
         Review submitted tools, run automated AI security audits, and approve or reject submissions before they go live in the public catalog.
       </p>
     </div>
-    <div class="d-flex gap-2">
+    <div class="d-flex flex-wrap gap-2">
       <a href="{{ route('dashboard.index') }}" class="btn-secondary-custom btn-sm text-decoration-none">
         <i class="bi bi-speedometer2 me-1"></i> Developer Dashboard
       </a>
@@ -28,35 +28,27 @@
   </div>
 
   <!-- Metric Highlights -->
-  <div class="row g-3 mb-4">
-    <div class="col-6 col-md-3">
-      <div class="bento-card p-3">
-        <div class="text-secondary small">Pending Approval</div>
-        <div class="fs-3 fw-bold" style="color: var(--violet-500);">{{ $counts['pending'] }}</div>
-      </div>
+  <div class="stats-grid mb-4">
+    <div class="bento-card p-3">
+      <div class="text-secondary small text-truncate">Pending Approval</div>
+      <div class="fs-3 fw-bold" style="color: var(--violet-500);">{{ $counts['pending'] }}</div>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="bento-card p-3">
-        <div class="text-secondary small">Published & Live</div>
-        <div class="fs-3 fw-bold" style="color: var(--color-success);">{{ $counts['published'] }}</div>
-      </div>
+    <div class="bento-card p-3">
+      <div class="text-secondary small text-truncate">Published & Live</div>
+      <div class="fs-3 fw-bold" style="color: var(--color-success);">{{ $counts['published'] }}</div>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="bento-card p-3">
-        <div class="text-secondary small">Rejected / Revision</div>
-        <div class="fs-3 fw-bold text-danger">{{ $counts['rejected'] }}</div>
-      </div>
+    <div class="bento-card p-3">
+      <div class="text-secondary small text-truncate">Rejected / Revision</div>
+      <div class="fs-3 fw-bold text-danger">{{ $counts['rejected'] }}</div>
     </div>
-    <div class="col-6 col-md-3">
-      <div class="bento-card p-3">
-        <div class="text-secondary small">Total Workspaces</div>
-        <div class="fs-3 fw-bold text-body">{{ $counts['all'] }}</div>
-      </div>
+    <div class="bento-card p-3">
+      <div class="text-secondary small text-truncate">Total Workspaces</div>
+      <div class="fs-3 fw-bold text-body">{{ $counts['all'] }}</div>
     </div>
   </div>
 
   <!-- Filter Navigation Tabs -->
-  <div class="d-flex gap-2 mb-4 border-bottom pb-3" style="border-color: var(--border-subtle) !important;">
+  <div class="moderation-filters mb-4 border-bottom pb-3" style="border-color: var(--border-subtle) !important;">
     <a href="{{ route('admin.moderation', ['tab' => 'pending']) }}" class="btn-sm text-decoration-none py-1 px-3 rounded-pill {{ $tab === 'pending' ? 'btn-violet' : 'btn-secondary-custom' }}">
       <i class="bi bi-hourglass-split me-1"></i> Awaiting Approval
       @if($counts['pending'] > 0)
@@ -80,9 +72,9 @@
       <div class="col-lg-6">
         <div class="bento-card h-100 p-4">
           <!-- Card Header & Status -->
-          <div class="d-flex justify-content-between align-items-start mb-3">
-            <div>
-              <div class="d-flex align-items-center gap-2 mb-1">
+          <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+            <div class="min-w-0 flex-grow-1">
+              <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
                 @if($tool->status === 'pending_approval')
                   <span class="badge py-1 px-2 font-mono small text-warning bg-warning-subtle border border-warning-subtle">
                     <i class="bi bi-hourglass-split me-1"></i>PENDING REVIEW
@@ -104,13 +96,13 @@
                   {{ $tool->category?->name ?? 'Utility' }}
                 </span>
               </div>
-              <h3 class="h5 fw-bold mb-0 text-body">{{ $tool->name }}</h3>
-              <span class="text-secondary small font-mono">/preview/{{ $tool->slug }}</span>
+              <h3 class="h5 fw-bold mb-0 text-body text-break">{{ $tool->name }}</h3>
+              <span class="text-secondary small font-mono text-break">/preview/{{ $tool->slug }}</span>
             </div>
 
             <!-- AI Verdict Badge if already audited -->
             @if($tool->ai_review_verdict)
-              <span class="badge font-mono small py-1 px-2" style="background: {{ $tool->ai_review_verdict === 'APPROVED' ? 'var(--color-success-bg)' : 'rgba(239, 68, 68, 0.12)' }}; color: {{ $tool->ai_review_verdict === 'APPROVED' ? 'var(--color-success)' : '#ef4444' }}; border: 1px solid {{ $tool->ai_review_verdict === 'APPROVED' ? 'var(--color-success)' : '#ef4444' }};">
+              <span class="badge font-mono small py-1 px-2 flex-shrink-0" style="background: {{ $tool->ai_review_verdict === 'APPROVED' ? 'var(--color-success-bg)' : 'rgba(239, 68, 68, 0.12)' }}; color: {{ $tool->ai_review_verdict === 'APPROVED' ? 'var(--color-success)' : '#ef4444' }}; border: 1px solid {{ $tool->ai_review_verdict === 'APPROVED' ? 'var(--color-success)' : '#ef4444' }};">
                 AI: {{ $tool->ai_review_verdict }}
               </span>
             @endif
@@ -129,12 +121,12 @@
           @endif
 
           <!-- Creator & Files Meta -->
-          <div class="d-flex justify-content-between align-items-center small text-secondary py-2 border-top border-bottom mb-3" style="border-color: var(--border-subtle) !important;">
-            <div>
+          <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 small text-secondary py-2 border-top border-bottom mb-3" style="border-color: var(--border-subtle) !important;">
+            <div class="text-break">
               <i class="bi bi-person-circle me-1"></i>
               <strong>{{ $tool->user->name }}</strong> ({{ $tool->user->email }})
             </div>
-            <div>
+            <div class="text-nowrap">
               <i class="bi bi-folder2-open me-1"></i>
               <span>{{ $tool->files->count() }} file(s) &bull; {{ round($tool->storage_bytes / 1024, 1) }} KB</span>
             </div>

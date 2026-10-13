@@ -27,14 +27,14 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;850&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
   <!-- MicroTool Hub Design System -->
-  <link rel="stylesheet" href="{{ asset('assets/design-system.css') }}?v=2026.1">
+  <link rel="stylesheet" href="{{ asset('assets/design-system.css') }}?v=2026.2">
 
   @stack('styles')
 <body class="@yield('body_class')">
 
   <!-- Navigation Bar -->
-  <nav class="site-navbar navbar navbar-expand-lg sticky-top">
-    <div class="@yield('navbar_container_class', 'container')">
+  <nav class="site-navbar navbar navbar-expand-xl sticky-top">
+    <div class="@yield('navbar_container_class', 'container-fluid px-3 px-xl-4 site-navbar-inner')">
       <!-- Brand Logo -->
       <a class="brand-badge" href="{{ route('home') }}">
         <div class="brand-icon">
@@ -53,7 +53,7 @@
 
       <!-- Nav Links & Controls -->
       <div class="collapse navbar-collapse" id="mainNavbar">
-        <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-3 gap-lg-1">
+        <ul class="navbar-nav me-auto mb-2 mb-xl-0 ms-xl-3 gap-xl-1">
           <li class="nav-item">
             <a class="nav-link-custom {{ request()->routeIs('home') ? 'active' : '' }}" href="{{ route('home') }}">
               <i class="bi bi-house-door"></i> Home
@@ -76,25 +76,25 @@
           </li>
         </ul>
 
-        <!-- Mobile Quick Search (< 992px) -->
-        <form class="d-lg-none mb-3" action="{{ route('explore') }}" method="GET">
+        <!-- Mobile Quick Search (< 1200px) -->
+        <form class="d-xl-none mb-3" action="{{ route('explore') }}" method="GET">
           <div class="nav-search-box w-100">
             <i class="bi bi-search nav-search-icon"></i>
             <input class="nav-search-input" type="search" name="q" placeholder="Find a micro-tool..." value="{{ request('q') }}" aria-label="Search tools">
           </div>
         </form>
 
-        <!-- Search Bar (Desktop >= 992px) -->
-        <form class="d-none d-lg-flex me-3 my-0" action="{{ route('explore') }}" method="GET">
+        <!-- Search Bar (Desktop >= 1200px) -->
+        <form class="d-none d-xl-flex me-3 my-0" action="{{ route('explore') }}" method="GET">
           <div class="nav-search-box" id="navSearchBox">
             <i class="bi bi-search nav-search-icon"></i>
             <input class="nav-search-input" id="navSearchInput" type="search" name="q" placeholder="Find a tool..." value="{{ request('q') }}" aria-label="Search" autocomplete="off">
-            <kbd class="nav-search-kbd d-none d-xl-inline-block" title="Press / to focus">/</kbd>
+            <kbd class="nav-search-kbd d-none d-xxl-inline-block" title="Press / to focus">/</kbd>
           </div>
         </form>
 
         <!-- Right Side: Theme Toggle & Controls (Aligned 36px) -->
-        <div class="d-flex align-items-center gap-2 pt-2 pt-lg-0 flex-wrap flex-lg-nowrap">
+        <div class="d-flex align-items-center gap-2 pt-2 pt-xl-0 flex-wrap">
           <!-- Theme Toggle Button -->
           <button type="button" class="theme-toggle-btn" id="themeToggleBtn" title="Switch Theme (Dark / Light)" aria-label="Switch Theme">
             <i class="bi bi-sun-fill" id="themeIcon"></i>
@@ -179,7 +179,7 @@
   @endif
 
   <!-- Main Content -->
-  <main class="flex-grow-1">
+  <main class="flex-grow-1 w-100 min-w-0">
     @yield('content')
   </main>
 
